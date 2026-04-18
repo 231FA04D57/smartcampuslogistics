@@ -8,6 +8,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ForgotPassword from './components/ForgotPassword';
 import ResetPassword from './components/ResetPassword';
 import Checkout from './components/Checkout';
+import Orders from './components/Orders';
 import Footer from './components/Footer';
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
           <Route path="/checkout" element={<Checkout />} />
+          <Route path="/orders" element={<Orders />} />
         </Routes>
         <Footer />
       </div>

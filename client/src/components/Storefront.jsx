@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, Star, PlusCircle, X, Trash2, MapPin, Map, Award, Shield } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Star, PlusCircle, X, Trash2, MapPin, Map, Award, Shield, Package } from 'lucide-react';
 
 const defaultProducts = [
   {
     id: 1,
     name: 'Professional Mini Drafter',
     category: 'Engineering',
-    price: 450,
+    salePrice: 450,
+    rentPrice: 30,
     rating: 4.8,
     image: '/images/drafter.png',
     description: 'High-precision mini drafter for technical drawing and architecture students.',
@@ -49,12 +50,13 @@ const defaultProducts = [
   },
   {
     id: 5,
-    name: 'Arduino Uno Starter Kit',
+    name: 'Dell XPS 13 Laptop (Used)',
     category: 'Electronics',
-    price: 2500,
-    rating: 4.9,
-    image: '/images/arduino.png',
-    description: 'Complete Arduino starter kit including breadboard, jumper wires, sensors, and LEDs.',
+    salePrice: 45000,
+    rentPrice: 1500,
+    rating: 4.8,
+    image: 'https://images.unsplash.com/photo-1593642632823-8f785ba67e45?q=80&w=2000&auto=format&fit=crop',
+    description: 'High performance laptop perfect for coding and engineering software. Mint condition.',
     location: 'Tech Club Room',
     seller: 'Campus Store',
   },
@@ -124,15 +126,17 @@ const Storefront = () => {
     // Check auth
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
+    let userEmail = 'guest';
     if (token && userData) {
       const user = JSON.parse(userData);
       setIsLoggedIn(true);
       setUserName(user.name || 'Student');
       setUserRole(user.role || 'student');
+      userEmail = user.email;
     }
 
     // Load loyalty points
-    const pts = parseInt(localStorage.getItem('loyaltyPoints') || '0');
+    const pts = parseInt(localStorage.getItem(`loyaltyPoints_${userEmail}`) || '0');
     setLoyaltyPoints(pts);
 
     // Check Geolocation
@@ -157,8 +161,18 @@ const Storefront = () => {
     setLoyaltyPoints(0);
   };
 
-  const handleAddToCart = (product) => {
-    const newCart = [...cart, product];
+  const handleAddToCart = (product, type = 'sale') => {
+    const sPrice = product.salePrice || product.price;
+    const rPrice = product.rentPrice;
+
+    const cartItem = {
+      ...product,
+      cartId: `${product.id}-${type}-${Date.now()}`,
+      listingType: type,
+      price: type === 'rent' ? rPrice : sPrice
+    };
+
+    const newCart = [...cart, cartItem];
     setCart(newCart);
     localStorage.setItem('cart', JSON.stringify(newCart));
     setAddedItems({ ...addedItems, [product.id]: true });
@@ -224,6 +238,12 @@ const Storefront = () => {
               <PlusCircle size={18} />
               Sell Item
             </Link>
+            {isLoggedIn && (
+              <Link to="/orders" className="btn-sell" style={{ background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0', marginLeft: '0.5rem' }}>
+                <Package size={18} />
+                My Orders
+              </Link>
+            )}
             {userRole === 'admin' && (
               <Link to="/admin" className="btn-sell" style={{ background: '#4f46e5', marginLeft: '0.5rem' }}>
                 <Shield size={18} />
@@ -280,7 +300,7 @@ const Storefront = () => {
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#64748b', fontSize: '0.8rem', marginTop: '0.15rem' }}>
                         <MapPin size={11} /> {item.location}
                       </div>
-                      <div className="cart-item-price" style={{ marginTop: '0.25rem' }}>₹{item.price}</div>
+                      <div className="cart-item-price" style={{ marginTop: '0.25rem' }}>₹{item.price}{item.listingType === 'rent' ? '/day' : ''}</div>
                     </div>
                     <button className="btn-remove" onClick={() => removeFromCart(index)}><Trash2 size={18} /></button>
                   </div>
@@ -323,7 +343,9 @@ const Storefront = () => {
             <div key={product.id} className="product-card">
               <div className="card-image-wrapper">
                 <img src={product.image} alt={product.name} className="product-image" />
-                <div className="category-badge">{product.category}</div>
+                <div className="category-badge" style={{ background: (product.rentPrice && !product.salePrice && !product.price) ? '#f59e0b' : '', color: (product.rentPrice && !product.salePrice && !product.price) ? '#fff' : '' }}>
+                  {(product.rentPrice && !product.salePrice && !product.price) ? `${product.category} (Rent)` : product.category}
+                </div>
               </div>
               <div className="card-body">
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
@@ -341,19 +363,41 @@ const Storefront = () => {
                   <MapPin size={14} color="#4f46e5" />
                   Pickup: {product.location}
                 </div>
-                <div className="card-footer">
-                  <span className="product-price">₹{product.price}</span>
-                  <button
-                    className="btn-add-cart"
-                    onClick={() => handleAddToCart(product)}
-                    style={{
-                      background: addedItems[product.id] ? '#10b981' : '',
-                      color: addedItems[product.id] ? '#fff' : '',
-                      borderColor: addedItems[product.id] ? '#10b981' : ''
-                    }}
-                  >
-                    {addedItems[product.id] ? 'Added!' : 'Add to Cart'}
-                  </button>
+                <div className="card-footer" style={{ flexDirection: 'column', gap: '0.75rem', alignItems: 'stretch' }}>
+                  {(product.salePrice || product.price) && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="product-price">₹{product.salePrice || product.price}</span>
+                      <button
+                        className="btn-add-cart"
+                        onClick={() => handleAddToCart(product, 'sale')}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          background: addedItems[product.id] ? '#10b981' : '',
+                          color: addedItems[product.id] ? '#fff' : '',
+                          borderColor: addedItems[product.id] ? '#10b981' : ''
+                        }}
+                      >
+                        {addedItems[product.id] ? 'Added!' : 'Buy'}
+                      </button>
+                    </div>
+                  )}
+                  {product.rentPrice && (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: (product.salePrice || product.price) ? '0.75rem' : '0', borderTop: (product.salePrice || product.price) ? '1px dashed #e2e8f0' : 'none' }}>
+                      <span className="product-price">₹{product.rentPrice}<span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '500' }}>/day</span></span>
+                      <button
+                        className="btn-add-cart"
+                        onClick={() => handleAddToCart(product, 'rent')}
+                        style={{
+                          padding: '0.5rem 1rem',
+                          background: addedItems[product.id] ? '#10b981' : '#fef3c7',
+                          color: addedItems[product.id] ? '#fff' : '#d97706',
+                          borderColor: addedItems[product.id] ? '#10b981' : '#fcd34d'
+                        }}
+                      >
+                        {addedItems[product.id] ? 'Added!' : 'Rent'}
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>

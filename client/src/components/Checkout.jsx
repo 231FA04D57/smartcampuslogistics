@@ -26,9 +26,25 @@ const Checkout = () => {
     setTimeout(() => {
       setLoading(false);
       setSuccess(true);
+      
+      const newOrder = {
+        id: `ORD-${Date.now()}`,
+        items: cart,
+        total: cartTotal,
+        status: 'Pending',
+        date: new Date().toISOString(),
+        paymentMethod
+      };
+      const userData = localStorage.getItem('user');
+      const user = userData ? JSON.parse(userData) : null;
+      const userEmail = user ? user.email : 'guest';
+      const existingOrders = JSON.parse(localStorage.getItem(`userOrders_${userEmail}`) || '[]');
+      existingOrders.push(newOrder);
+      localStorage.setItem(`userOrders_${userEmail}`, JSON.stringify(existingOrders));
+
       localStorage.removeItem('cart'); // Clear cart after successful payment
       setTimeout(() => {
-        navigate('/');
+        navigate('/orders');
       }, 3000);
     }, 2000);
   };

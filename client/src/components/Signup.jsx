@@ -8,13 +8,15 @@ const Signup = () => {
     name: '',
     email: '',
     password: '',
-    role: 'student'
+    role: 'student',
+    otp: ''
   });
+  const [otpSent, setOtpSent] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { name, email, password, role } = formData;
+  const { name, email, password, role, otp } = formData;
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -28,14 +30,27 @@ const Signup = () => {
 
     setLoading(true);
     setError('');
-    try {
-      const res = await axios.post('http://localhost:5000/api/auth/register', formData);
-      localStorage.setItem('token', res.data.token);
-      navigate('/');
-    } catch (err) {
-      setError(err.response?.data?.message || 'Something went wrong');
-    } finally {
-      setLoading(false);
+    
+    if (!otpSent) {
+      try {
+        await axios.post('http://localhost:5000/api/auth/send-otp', { email });
+        setOtpSent(true);
+        setError('');
+      } catch (err) {
+        setError(err.response?.data?.message || 'Error sending OTP');
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      try {
+        const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+        localStorage.setItem('token', res.data.token);
+        navigate('/');
+      } catch (err) {
+        setError(err.response?.data?.message || 'Invalid OTP or registration failed');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -125,8 +140,29 @@ const Signup = () => {
               </div>
             </div>
 
-            <button type="submit" className="btn-primary auth-submit" disabled={loading}>
-              {loading ? 'Creating account...' : 'Create Account'}
+            {otpSent && (
+              <div className="form-group" style={{ marginTop: '1rem' }}>
+                <label htmlFor="otp">Enter 6-Digit OTP</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" />
+                  <input
+                    type="text"
+                    id="otp"
+                    name="otp"
+                    className="form-input"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={onChange}
+                    maxLength="6"
+                    required
+                  />
+                </div>
+                <p style={{ fontSize: '0.8rem', color: '#64748b', marginTop: '0.5rem' }}>We sent an OTP to {email}</p>
+              </div>
+            )}
+
+            <button type="submit" className="btn-primary auth-submit" disabled={loading} style={{ marginTop: '1rem' }}>
+              {loading ? 'Processing...' : (otpSent ? 'Verify & Create Account' : 'Send Verification OTP')}
               <ChevronRight size={20} />
             </button>
           </form>

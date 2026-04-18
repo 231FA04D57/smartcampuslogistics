@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { UploadCloud, CheckCircle, ArrowLeft, MapPin, Award } from 'lucide-react';
 
@@ -6,7 +6,8 @@ const SellItem = () => {
   const [formData, setFormData] = useState({
     title: '',
     description: '',
-    price: '',
+    salePrice: '',
+    rentPrice: '',
     category: 'Engineering',
     location: ''
   });
@@ -17,10 +18,20 @@ const SellItem = () => {
   const [pointsEarned, setPointsEarned] = useState(0);
   const navigate = useNavigate();
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (!token || !userData) {
+      alert("You must be logged in to sell an item.");
+      navigate('/login');
+    }
+  }, [navigate]);
+
   // Get current user
   const userData = localStorage.getItem('user');
   const currentUser = userData ? JSON.parse(userData) : null;
   const sellerName = currentUser ? currentUser.name : 'Anonymous';
+  const userEmail = currentUser ? currentUser.email : 'guest';
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -41,12 +52,19 @@ const SellItem = () => {
     e.preventDefault();
     setLoading(true);
 
+    if (!formData.salePrice && !formData.rentPrice) {
+      alert("Please provide at least a Sale Price or a Rent Price.");
+      setLoading(false);
+      return;
+    }
+
     // Build new listing object
     const newListing = {
       id: Date.now(),
       name: formData.title,
       description: formData.description,
-      price: parseInt(formData.price),
+      salePrice: formData.salePrice ? parseInt(formData.salePrice) : null,
+      rentPrice: formData.rentPrice ? parseInt(formData.rentPrice) : null,
       category: formData.category,
       location: formData.location,
       rating: 5.0,
@@ -60,9 +78,10 @@ const SellItem = () => {
     localStorage.setItem('userListings', JSON.stringify(existing));
 
     // Add loyalty points: 50 points per listing
-    const currentPoints = parseInt(localStorage.getItem('loyaltyPoints') || '0');
+    const pointsKey = `loyaltyPoints_${userEmail}`;
+    const currentPoints = parseInt(localStorage.getItem(pointsKey) || '0');
     const earned = 50;
-    localStorage.setItem('loyaltyPoints', currentPoints + earned);
+    localStorage.setItem(pointsKey, (currentPoints + earned).toString());
     setPointsEarned(earned);
 
     setTimeout(() => {
@@ -144,10 +163,15 @@ const SellItem = () => {
             </div>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginTop: '1.25rem' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1.5rem', marginTop: '1.25rem' }}>
             <div className="form-group">
-              <label htmlFor="price">Price (₹)</label>
-              <input type="number" id="price" name="price" className="form-input" placeholder="e.g. 500" value={formData.price} onChange={onChange} required min="1" />
+              <label htmlFor="salePrice">Sale Price (₹)</label>
+              <input type="number" id="salePrice" name="salePrice" className="form-input" placeholder="Optional" value={formData.salePrice} onChange={onChange} min="1" />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="rentPrice">Rent Price (₹/day)</label>
+              <input type="number" id="rentPrice" name="rentPrice" className="form-input" placeholder="Optional" value={formData.rentPrice} onChange={onChange} min="1" />
             </div>
 
             <div className="form-group">
