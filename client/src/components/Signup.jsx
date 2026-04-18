@@ -1,0 +1,149 @@
+import React, { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import axios from 'axios';
+import { Mail, Lock, User, GraduationCap, ChevronRight, ArrowLeft } from 'lucide-react';
+
+const Signup = () => {
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'student'
+  });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const navigate = useNavigate();
+
+  const { name, email, password, role } = formData;
+
+  const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
+
+  const onSubmit = async (e) => {
+    e.preventDefault();
+    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    if (!collegeRegex.test(email)) {
+      setError('Email must start with 2 and have exactly 10 characters before the @ symbol. (e.g. 20X1A05B1@college.edu)');
+      return;
+    }
+
+    setLoading(true);
+    setError('');
+    try {
+      const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+      localStorage.setItem('token', res.data.token);
+      navigate('/');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Something went wrong');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="auth-page">
+      <div className="auth-left">
+        <button className="btn-back" onClick={() => navigate('/')}>
+          <ArrowLeft size={20} /> Back to Store
+        </button>
+        <div className="auth-form-wrapper">
+          <div className="auth-header">
+            <h1>Create Account</h1>
+            <p>Join CampusLogistics using your college credentials</p>
+          </div>
+
+          {error && <div className="error-message">{error}</div>}
+
+          <form onSubmit={onSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">Full Name</label>
+              <div className="input-wrapper">
+                <User className="input-icon" />
+                <input
+                  type="text"
+                  id="name"
+                  name="name"
+                  className="form-input"
+                  placeholder="John Doe"
+                  value={name}
+                  onChange={onChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="email">College Email Address</label>
+              <div className="input-wrapper">
+                <Mail className="input-icon" />
+                <input
+                  type="email"
+                  id="email"
+                  name="email"
+                  className="form-input"
+                  placeholder="20X1A05B1@college.edu"
+                  value={email}
+                  onChange={onChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+              <div>
+                <label htmlFor="password">Password</label>
+                <div className="input-wrapper">
+                  <Lock className="input-icon" />
+                  <input
+                    type="password"
+                    id="password"
+                    name="password"
+                    className="form-input"
+                    placeholder="••••••••"
+                    value={password}
+                    onChange={onChange}
+                    minLength="6"
+                    required
+                  />
+                </div>
+              </div>
+              <div>
+                <label htmlFor="role">Role</label>
+                <div className="input-wrapper select-wrapper">
+                  <GraduationCap className="input-icon" />
+                  <select
+                    id="role"
+                    name="role"
+                    className="form-input"
+                    value={role}
+                    onChange={onChange}
+                  >
+                    <option value="student">Student</option>
+                    <option value="faculty">Faculty</option>
+                    <option value="admin">Admin</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" className="btn-primary auth-submit" disabled={loading}>
+              {loading ? 'Creating account...' : 'Create Account'}
+              <ChevronRight size={20} />
+            </button>
+          </form>
+
+          <div className="auth-footer">
+            Already have an account? <Link to="/login" className="auth-link">Sign In</Link>
+          </div>
+        </div>
+      </div>
+      <div className="auth-right signup-bg">
+        <div className="auth-overlay">
+          <h2>Join the Community</h2>
+          <p>Get access to exclusive deals, easily sell your used items, and connect with other students.</p>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Signup;
