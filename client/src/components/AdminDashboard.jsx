@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Users, Package, Trash2, Edit, Shield, ArrowLeft } from 'lucide-react';
+import { API_URL } from '../config';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('users');
@@ -33,7 +34,7 @@ const AdminDashboard = () => {
     setLoading(true);
     try {
       // Fetch users from backend
-      const res = await fetch('http://localhost:5000/api/admin/users', {
+      const res = await fetch(`${API_URL}/api/admin/users`, {
         headers: {
           'x-auth-token': token
         }
@@ -67,7 +68,7 @@ const AdminDashboard = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
         method: 'DELETE',
         headers: {
           'x-auth-token': token
@@ -96,7 +97,7 @@ const AdminDashboard = () => {
 
     const token = localStorage.getItem('token');
     try {
-      const res = await fetch(`http://localhost:5000/api/admin/users/${id}`, {
+      const res = await fetch(`${API_URL}/api/admin/users/${id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

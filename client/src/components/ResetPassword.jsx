@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
 import { Lock, ArrowRight } from 'lucide-react';
+import { API_URL } from '../config';
 
 const ResetPassword = () => {
   const [password, setPassword] = useState('');
@@ -28,7 +29,7 @@ const ResetPassword = () => {
     setError('');
     
     try {
-      const res = await axios.post(`http://localhost:5000/api/reset/${token}`, { password });
+      const res = await axios.post(`${API_URL}/api/reset/${token}`, { password });
       setMessage(res.data.message);
       setTimeout(() => {
         navigate('/login');

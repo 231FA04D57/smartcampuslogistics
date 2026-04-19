@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Mail, Lock, User, GraduationCap, ChevronRight, ArrowLeft } from 'lucide-react';
+import { API_URL } from '../config';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -33,7 +34,7 @@ const Signup = () => {
     
     if (!otpSent) {
       try {
-        await axios.post('http://localhost:5000/api/auth/send-otp', { email });
+        await axios.post(`${API_URL}/api/auth/send-otp`, { email });
         setOtpSent(true);
         setError('');
       } catch (err) {
@@ -43,7 +44,7 @@ const Signup = () => {
       }
     } else {
       try {
-        const res = await axios.post('http://localhost:5000/api/auth/register', formData);
+        const res = await axios.post(`${API_URL}/api/auth/register`, formData);
         localStorage.setItem('token', res.data.token);
         navigate('/');
       } catch (err) {
