@@ -124,7 +124,7 @@ router.post('/register', async (req, res) => {
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
-        res.status(201).json({ token });
+        res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
       }
     );
   } catch (err) {
@@ -169,7 +169,7 @@ router.post('/login', async (req, res) => {
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, role: user.role } });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
       }
     );
   } catch (err) {

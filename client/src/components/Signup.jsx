@@ -46,6 +46,7 @@ const Signup = () => {
       try {
         const res = await axios.post(`${API_URL}/api/auth/register`, formData);
         localStorage.setItem('token', res.data.token);
+        localStorage.setItem('user', JSON.stringify(res.data.user));
         navigate('/');
       } catch (err) {
         setError(err.response?.data?.message || 'Invalid OTP or registration failed');

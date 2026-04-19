@@ -9,33 +9,37 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Database connection using URI from .env
 const connectDB = async () => {
   try {
-    const uri = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/smartcampus';
+    const uri = process.env.MONGO_URI;
+
+    if (!uri) {
+      throw new Error("MONGO_URI not found");
+    }
 
     await mongoose.connect(uri);
-    console.log('====================================================');
 
-    // Seed admin user
+    console.log('✅ MongoDB Connected Successfully!');
+
     const User = require('./models/User');
     const bcrypt = require('bcryptjs');
+
     const adminExists = await User.findOne({ email: 'admin' });
+
     if (!adminExists) {
       const salt = await bcrypt.genSalt(10);
       const hashedPassword = await bcrypt.hash('Admin@2026', salt);
+
       await User.create({
         name: 'Super Admin',
         email: 'admin',
         password: hashedPassword,
         role: 'admin'
       });
+
       console.log('👑 Admin user seeded successfully!');
     }
-    console.log('✅ MongoDB Connected Successfully!');
-    console.log('🚀 TO VIEW DATA IN MONGODB COMPASS, COPY THIS URI:');
-    console.log(`👉 ${uri}`);
-    console.log('====================================================');
+
   } catch (error) {
     console.error('MongoDB connection failed:', error.message);
     process.exit(1);
