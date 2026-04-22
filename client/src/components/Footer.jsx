@@ -36,14 +36,14 @@ const Footer = () => {
               <MapPin size={18} color="#4f46e5" /> Vignan University, Vadlamudi
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', marginBottom: '1rem' }}>
-              <Mail size={18} color="#4f46e5" /> support@campuslogistics.edu
+              <Mail size={18} color="#4f46e5" /> supportcampushelp@gmal.com
             </li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#94a3b8', marginBottom: '1rem' }}>
-              <Phone size={18} color="#4f46e5" /> +91 98765 43210
+              <Phone size={18} color="#4f46e5" /> +91 94411 01495
             </li>
           </ul>
         </div>
-
+ 
       </div>
       
       <div style={{ borderTop: '1px solid #334155', paddingTop: '2rem', textAlign: 'center', color: '#64748b', fontSize: '0.9rem' }}>

@@ -51,6 +51,7 @@ connectDB();
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/admin', require('./routes/admin'));
 app.use('/api/reset', require('./routes/passwordReset'));
+app.use('/api/upload', require('./routes/upload'));
 
 app.get('/', (req, res) => {
   res.send('Smart Campus API is running...');

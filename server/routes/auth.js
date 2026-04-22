@@ -139,18 +139,24 @@ router.post('/login', async (req, res) => {
     const { email, password } = req.body;
 
     const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
-    if (!collegeRegex.test(email) && email !== 'admin') {
+    const normalizedEmail = email.toLowerCase().trim();
+    console.log('Login attempt:', { email: req.body.email, password: req.body.password, normalizedEmail });
+
+    if (!collegeRegex.test(normalizedEmail) && normalizedEmail !== 'admin') {
+      console.log('Regex failed');
       return res.status(400).json({ message: 'Email must start with 2 and have exactly 10 characters before the @ symbol.' });
     }
 
     // Check if user exists
-    let user = await User.findOne({ email });
+    let user = await User.findOne({ email: normalizedEmail === 'admin' ? 'admin' : email });
+    console.log('User found:', user ? user.email : 'null');
     if (!user) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
 
     // Compare passwords
     const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password match:', isMatch);
     if (!isMatch) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }

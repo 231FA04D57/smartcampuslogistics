@@ -17,7 +17,8 @@ const Login = () => {
   const onSubmit = async (e) => {
     e.preventDefault();
     const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
-    if (!collegeRegex.test(email) && email !== 'admin') {
+    const normalizedEmail = email.toLowerCase().trim();
+    if (!collegeRegex.test(normalizedEmail) && normalizedEmail !== 'admin') {
       setError('Email must start with 2 and have exactly 10 characters before the @ symbol.');
       return;
     }
@@ -25,7 +26,8 @@ const Login = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await axios.post(`${API_URL}/api/auth/login`, formData);
+      const payload = { ...formData, email: normalizedEmail };
+      const res = await axios.post(`${API_URL}/api/auth/login`, payload);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       navigate('/');
@@ -60,7 +62,7 @@ const Login = () => {
                   id="email"
                   name="email"
                   className="form-input"
-                  placeholder="20X1A05B1@college.edu"
+                  placeholder="23X1A05B1@gmail.com"
                   value={email}
                   onChange={onChange}
                   required
