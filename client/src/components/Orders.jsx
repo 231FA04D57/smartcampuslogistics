@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Package, ArrowLeft, Clock, CheckCircle, Truck, XCircle } from 'lucide-react';
+import { Package, ArrowLeft, Clock, CheckCircle, Truck, XCircle, AlertCircle, Calendar } from 'lucide-react';
 
 const Orders = () => {
   const [orders, setOrders] = useState([]);
+  const [rentalCountdowns, setRentalCountdowns] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -14,10 +15,43 @@ const Orders = () => {
     // Sort orders by date descending
     savedOrders.sort((a, b) => new Date(b.date) - new Date(a.date));
     setOrders(savedOrders);
+    
+    // Update rental countdowns
+    updateRentalCountdowns(savedOrders);
   }, []);
 
-  const getStatusBadge = (status) => {
+  // Set up interval to update countdowns
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setOrders(prevOrders => {
+        updateRentalCountdowns(prevOrders);
+        return prevOrders;
+      });
+    }, 60000); // Update every minute
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const updateRentalCountdowns = (orders) => {
+    const countdowns = {};
+    orders.forEach((order, idx) => {
+      order.items.forEach((item, itemIdx) => {
+        if (item.listingType === 'rent' && item.rentalEndDate) {
+          const endDate = new Date(item.rentalEndDate);
+          const now = new Date();
+          const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+          const hoursLeft = Math.ceil((endDate - now) / (1000 * 60 * 60));
+          countdowns[`${idx}_${itemIdx}`] = { daysLeft, hoursLeft, endDate };
+        }
+      });
+    });
+    setRentalCountdowns(countdowns);
+  };
+
+  const getStatusBadge = (status, order) => {
     switch (status) {
+      case 'Active Rental':
+        return <span style={{ background: '#dbeafe', color: '#1e40af', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Calendar size={14} /> Active Rental</span>;
       case 'Pending':
         return <span style={{ background: '#fef3c7', color: '#92400e', padding: '0.25rem 0.75rem', borderRadius: '9999px', fontSize: '0.85rem', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '0.25rem' }}><Clock size={14} /> Pending</span>;
       case 'Shipped':
@@ -79,28 +113,54 @@ const Orders = () => {
                   </div>
                 </div>
                 <div>
-                  {getStatusBadge(order.status)}
+                  {getStatusBadge(order.status, order)}
                 </div>
               </div>
 
               <div style={{ padding: '1.5rem' }}>
-                {order.items.map((item, index) => (
-                  <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: index !== order.items.length - 1 ? '1.5rem' : '0', paddingBottom: index !== order.items.length - 1 ? '1.5rem' : '0', borderBottom: index !== order.items.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
-                    <div style={{ display: 'flex', gap: '1rem' }}>
-                      <img src={item.image} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
-                      <div>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: '#0f172a' }}>{item.name}</h3>
-                        <div style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Seller: {item.seller}</div>
-                        <div style={{ display: 'inline-block', background: item.listingType === 'rent' ? '#fef3c7' : '#f1f5f9', color: item.listingType === 'rent' ? '#d97706' : '#64748b', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600', marginTop: '0.25rem' }}>
-                          {item.listingType === 'rent' ? 'Rental' : 'Purchase'}
+                {order.items.map((item, index) => {
+                  const countdownKey = `${orders.indexOf(order)}_${index}`;
+                  const countdown = rentalCountdowns[countdownKey];
+                  
+                  return (
+                    <div key={index} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: index !== order.items.length - 1 ? '1.5rem' : '0', paddingBottom: index !== order.items.length - 1 ? '1.5rem' : '0', borderBottom: index !== order.items.length - 1 ? '1px solid #e2e8f0' : 'none' }}>
+                      <div style={{ display: 'flex', gap: '1rem', flex: 1 }}>
+                        <img src={item.image} alt={item.name} style={{ width: '80px', height: '80px', objectFit: 'cover', borderRadius: '8px', border: '1px solid #e2e8f0' }} />
+                        <div style={{ flex: 1 }}>
+                          <h3 style={{ fontSize: '1.1rem', marginBottom: '0.25rem', color: '#0f172a' }}>{item.name}</h3>
+                          <div style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '0.5rem' }}>Seller: {item.seller}</div>
+                          <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                            <div style={{ display: 'inline-block', background: item.listingType === 'rent' ? '#fef3c7' : '#f1f5f9', color: item.listingType === 'rent' ? '#d97706' : '#64748b', padding: '0.15rem 0.5rem', borderRadius: '4px', fontSize: '0.75rem', fontWeight: '600' }}>
+                              {item.listingType === 'rent' ? 'Rental' : 'Purchase'}
+                            </div>
+                          </div>
+                          
+                          {item.listingType === 'rent' && item.rentalDays && (
+                            <div style={{ background: '#eff6ff', border: '1px solid #cffafe', padding: '0.5rem 0.75rem', borderRadius: '6px', fontSize: '0.85rem', color: '#0369a1', fontWeight: '500' }}>
+                              <Calendar size={14} style={{ display: 'inline', marginRight: '0.4rem' }} />
+                              {item.rentalDays} day{item.rentalDays !== 1 ? 's' : ''} rental
+                              {countdown && countdown.daysLeft > 0 ? (
+                                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#0ea5e9' }}>
+                                  ⏱️ {countdown.daysLeft} day{countdown.daysLeft !== 1 ? 's' : ''} remaining
+                                </div>
+                              ) : countdown && countdown.daysLeft === 0 ? (
+                                <div style={{ marginTop: '0.25rem', fontSize: '0.75rem', color: '#f59e0b' }}>
+                                  ⚠️ Due for return today
+                                </div>
+                              ) : null}
+                            </div>
+                          )}
                         </div>
                       </div>
+                      <div style={{ textAlign: 'right', minWidth: '100px' }}>
+                        <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#0f172a' }}>₹{item.price}{item.listingType === 'rent' ? '/day' : ''}</div>
+                        {item.listingType === 'rent' && item.rentalDays && (
+                          <div style={{ fontSize: '0.9rem', color: '#64748b', marginTop: '0.25rem' }}>× {item.rentalDays}</div>
+                        )}
+                      </div>
                     </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '1.1rem', fontWeight: '600', color: '#0f172a' }}>₹{item.price}{item.listingType === 'rent' ? '/day' : ''}</div>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           ))

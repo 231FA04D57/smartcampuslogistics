@@ -5,20 +5,32 @@ import { Mail, ArrowLeft, Send } from 'lucide-react';
 import { API_URL } from '../config';
 
 const ForgotPassword = () => {
-  const [email, setEmail] = useState('');
+  const [emailOrPhone, setEmailOrPhone] = useState('');
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
+  const isPhoneNumber = (value) => {
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(value.replace(/[^\d]/g, ''));
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
+    const trimmedInput = emailOrPhone.toLowerCase().trim();
+    
+    if (!isPhoneNumber(trimmedInput) && !/^2[a-zA-Z0-9]{9}@/.test(trimmedInput)) {
+      setError('Please enter a valid college email or 10-digit phone number.');
+      return;
+    }
+
     setLoading(true);
     setError('');
     setMessage('');
     
     try {
-      const res = await axios.post(`${API_URL}/api/reset/forgot`, { email });
+      const res = await axios.post(`${API_URL}/api/reset/forgot`, { emailOrPhone: trimmedInput });
       setMessage(res.data.message);
     } catch (err) {
       setError(err.response?.data?.message || 'Something went wrong. Please try again.');
@@ -36,7 +48,7 @@ const ForgotPassword = () => {
         <div className="auth-form-wrapper">
           <div className="auth-header">
             <h1>Forgot Password</h1>
-            <p>Enter your college email address to receive a password reset link.</p>
+            <p>Enter your college email or phone number to receive a password reset link.</p>
           </div>
 
           {error && <div className="error-message">{error}</div>}
@@ -44,17 +56,17 @@ const ForgotPassword = () => {
 
           <form onSubmit={onSubmit}>
             <div className="form-group">
-              <label htmlFor="email">College Email Address</label>
+              <label htmlFor="emailOrPhone">College Email or Phone Number</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
                   type="text"
-                  id="email"
-                  name="email"
+                  id="emailOrPhone"
+                  name="emailOrPhone"
                   className="form-input"
-                  placeholder="20X1A05B1@college.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="20X1A05B1@college.edu or 9876543210"
+                  value={emailOrPhone}
+                  onChange={(e) => setEmailOrPhone(e.target.value)}
                   required
                 />
               </div>

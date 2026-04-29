@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-import { Mail, Lock, User, GraduationCap, ChevronRight, ArrowLeft } from 'lucide-react';
+import { Mail, Lock, User, GraduationCap, ChevronRight, ArrowLeft, Phone } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
     name: '',
     email: '',
+    phone: '',
+    alternateEmail: '',
     password: '',
     role: 'student',
     otp: ''
@@ -17,7 +19,7 @@ const Signup = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { name, email, password, role, otp } = formData;
+  const { name, email, phone, alternateEmail, password, role, otp } = formData;
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
@@ -101,6 +103,39 @@ const Signup = () => {
                   value={email}
                   onChange={onChange}
                   required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="phone">Phone Number</label>
+              <div className="input-wrapper">
+                <Phone className="input-icon" />
+                <input
+                  type="tel"
+                  id="phone"
+                  name="phone"
+                  className="form-input"
+                  placeholder="+1 (555) 123-4567"
+                  value={phone}
+                  onChange={onChange}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="alternateEmail">Alternate Email (Optional)</label>
+              <div className="input-wrapper">
+                <Mail className="input-icon" />
+                <input
+                  type="email"
+                  id="alternateEmail"
+                  name="alternateEmail"
+                  className="form-input"
+                  placeholder="your.email@example.com"
+                  value={alternateEmail}
+                  onChange={onChange}
                 />
               </div>
             </div>

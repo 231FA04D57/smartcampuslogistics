@@ -1,22 +1,44 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CreditCard, Wallet, Banknote, ArrowLeft, CheckCircle } from 'lucide-react';
+import { CreditCard, Wallet, Banknote, ArrowLeft, CheckCircle, Calendar } from 'lucide-react';
 
 const Checkout = () => {
   const [cart, setCart] = useState([]);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState('card');
+  const [rentalDurations, setRentalDurations] = useState({});
   const navigate = useNavigate();
 
   useEffect(() => {
     const savedCart = localStorage.getItem('cart');
     if (savedCart) {
-      setCart(JSON.parse(savedCart));
+      const cartData = JSON.parse(savedCart);
+      setCart(cartData);
+      // Initialize rental durations
+      const durations = {};
+      cartData.forEach((item, idx) => {
+        if (item.listingType === 'rent') {
+          durations[idx] = 1;
+        }
+      });
+      setRentalDurations(durations);
     }
   }, []);
 
-  const cartTotal = cart.reduce((total, item) => total + item.price, 0);
+  const handleRentalDurationChange = (index, days) => {
+    setRentalDurations(prev => ({
+      ...prev,
+      [index]: Math.max(1, parseInt(days) || 1)
+    }));
+  };
+
+  const cartTotal = cart.reduce((total, item, idx) => {
+    if (item.listingType === 'rent') {
+      return total + (item.price * (rentalDurations[idx] || 1));
+    }
+    return total + item.price;
+  }, 0);
 
   const handlePayment = (e) => {
     e.preventDefault();
@@ -29,18 +51,42 @@ const Checkout = () => {
       
       const newOrder = {
         id: `ORD-${Date.now()}`,
-        items: cart,
+        items: cart.map((item, idx) => ({
+          ...item,
+          rentalDays: item.listingType === 'rent' ? rentalDurations[idx] || 1 : undefined,
+          rentalEndDate: item.listingType === 'rent' ? new Date(Date.now() + (rentalDurations[idx] || 1) * 24 * 60 * 60 * 1000).toISOString() : undefined
+        })),
         total: cartTotal,
-        status: 'Pending',
+        status: cart.some(item => item.listingType === 'rent') ? 'Active Rental' : 'Pending',
         date: new Date().toISOString(),
         paymentMethod
       };
+      
       const userData = localStorage.getItem('user');
       const user = userData ? JSON.parse(userData) : null;
       const userEmail = user ? user.email : 'guest';
       const existingOrders = JSON.parse(localStorage.getItem(`userOrders_${userEmail}`) || '[]');
       existingOrders.push(newOrder);
       localStorage.setItem(`userOrders_${userEmail}`, JSON.stringify(existingOrders));
+
+      // Mark products as rented/sold in inventory
+      const inventory = JSON.parse(localStorage.getItem('productInventory') || '{}');
+      cart.forEach((item, idx) => {
+        const productKey = `${item.id}_${item.seller}`;
+        if (item.listingType === 'rent') {
+          inventory[productKey] = {
+            status: 'rented',
+            rentalEndDate: new Date(Date.now() + (rentalDurations[idx] || 1) * 24 * 60 * 60 * 1000).toISOString(),
+            renter: userEmail
+          };
+        } else {
+          inventory[productKey] = {
+            status: 'sold',
+            buyer: userEmail
+          };
+        }
+      });
+      localStorage.setItem('productInventory', JSON.stringify(inventory));
 
       localStorage.removeItem('cart'); // Clear cart after successful payment
       setTimeout(() => {
@@ -56,7 +102,7 @@ const Checkout = () => {
           <CheckCircle size={72} color="#10b981" style={{ marginBottom: '1rem', margin: '0 auto' }} />
           <h2 style={{ fontSize: '2.5rem', fontFamily: 'Outfit, sans-serif', marginBottom: '0.5rem' }}>Payment Successful!</h2>
           <p style={{ color: '#64748b', marginBottom: '2rem' }}>Your order has been placed and the seller has been notified.</p>
-          <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Redirecting to storefront...</p>
+          <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Redirecting to orders...</p>
         </div>
       </div>
     );
@@ -98,6 +144,39 @@ const Checkout = () => {
               <span style={{ fontWeight: '500', color: paymentMethod === 'cod' ? '#1e293b' : '#64748b' }}>Cash</span>
             </div>
           </div>
+
+          {/* Rental Duration Selection */}
+          {cart.some(item => item.listingType === 'rent') && (
+            <div style={{ background: '#eff6ff', border: '1px solid #cffafe', borderRadius: '12px', padding: '1.5rem', marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', marginBottom: '1rem', color: '#0369a1' }}>
+                <Calendar size={18} style={{ display: 'inline', marginRight: '0.5rem' }} />
+                Rental Duration
+              </h3>
+              {cart.map((item, idx) => (
+                item.listingType === 'rent' && (
+                  <div key={idx} style={{ marginBottom: idx !== cart.length - 1 ? '1rem' : '0' }}>
+                    <div style={{ fontSize: '0.9rem', color: '#0f172a', marginBottom: '0.5rem', fontWeight: '500' }}>{item.name}</div>
+                    <div className="rental-duration-group">
+                      <div className="duration-input-wrapper">
+                        <input
+                          type="number"
+                          min="1"
+                          max="90"
+                          value={rentalDurations[idx] || 1}
+                          onChange={(e) => handleRentalDurationChange(idx, e.target.value)}
+                          className="duration-input"
+                          placeholder="Days"
+                        />
+                      </div>
+                      <div className="duration-display">
+                        {rentalDurations[idx] || 1} day{rentalDurations[idx] !== 1 ? 's' : ''} × ₹{item.price}/day = ₹{item.price * (rentalDurations[idx] || 1)}
+                      </div>
+                    </div>
+                  </div>
+                )
+              ))}
+            </div>
+          )}
 
           <form onSubmit={handlePayment}>
             {paymentMethod === 'card' && (
@@ -147,14 +226,21 @@ const Checkout = () => {
             ) : (
               cart.map((item, i) => (
                 <div key={i} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem', paddingBottom: '1rem', borderBottom: '1px solid #e2e8f0' }}>
-                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                  <div style={{ display: 'flex', gap: '0.75rem', flex: 1 }}>
                     <img src={item.image} alt={item.name} style={{ width: '48px', height: '48px', objectFit: 'cover', borderRadius: '8px' }} />
-                    <div>
+                    <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: '0.9rem', marginBottom: '0.25rem' }}>{item.name}</h4>
                       <p style={{ color: '#64748b', fontSize: '0.8rem' }}>Pickup: {item.location}</p>
+                      {item.listingType === 'rent' && (
+                        <p style={{ color: '#0369a1', fontSize: '0.8rem', fontWeight: '500' }}>
+                          {rentalDurations[i] || 1} day{rentalDurations[i] !== 1 ? 's' : ''} × ₹{item.price}/day
+                        </p>
+                      )}
                     </div>
                   </div>
-                  <span style={{ fontWeight: '600' }}>₹{item.price}</span>
+                  <span style={{ fontWeight: '600' }}>
+                    ₹{item.listingType === 'rent' ? item.price * (rentalDurations[i] || 1) : item.price}
+                  </span>
                 </div>
               ))
             )}

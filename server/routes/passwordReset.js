@@ -8,11 +8,20 @@ const User = require('../models/User');
 // POST /api/reset/forgot
 router.post('/forgot', async (req, res) => {
   try {
-    const { email } = req.body;
-    const user = await User.findOne({ email });
+    const { emailOrPhone } = req.body;
+    const trimmedInput = emailOrPhone.toLowerCase().trim();
+    
+    const isPhoneNumber = /^[0-9]{10}$/.test(trimmedInput.replace(/[^\d]/g, ''));
+    
+    let user;
+    if (isPhoneNumber) {
+      user = await User.findOne({ phone: trimmedInput.replace(/[^\d]/g, '') });
+    } else {
+      user = await User.findOne({ email: trimmedInput });
+    }
 
     if (!user) {
-      return res.status(404).json({ message: 'User with that email does not exist' });
+      return res.status(404).json({ message: 'User with that email or phone number does not exist' });
     }
 
     // Generate token

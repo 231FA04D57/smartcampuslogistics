@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { ShoppingCart, Search, Menu, Star, PlusCircle, X, Trash2, MapPin, Map, Award, Shield, Package } from 'lucide-react';
+import { ShoppingCart, Search, Menu, Star, PlusCircle, X, Trash2, MapPin, Map, Award, Shield, Package, Zap, Calendar } from 'lucide-react';
+import axios from 'axios';
+import { API_URL } from '../config';
 
 const defaultProducts = [
   {
@@ -14,6 +16,7 @@ const defaultProducts = [
     description: 'High-precision mini drafter for technical drawing and architecture students.',
     location: 'Engineering Block A',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
   },
   {
     id: 2,
@@ -25,6 +28,7 @@ const defaultProducts = [
     description: 'Advanced scientific calculator with high-resolution LCD and 552 functions.',
     location: 'Main Library',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 14 * 24 * 60 * 60 * 1000),
   },
   {
     id: 3,
@@ -36,6 +40,7 @@ const defaultProducts = [
     description: '100% cotton, stain-resistant lab coat with deep pockets for medical and chemistry labs.',
     location: 'Chemistry Lab Area',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
   },
   {
     id: 4,
@@ -47,6 +52,7 @@ const defaultProducts = [
     description: 'High-quality sports equipment for campus tournaments and physical education.',
     location: 'Sports Complex',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000),
   },
   {
     id: 5,
@@ -59,6 +65,7 @@ const defaultProducts = [
     description: 'High performance laptop perfect for coding and engineering software. Mint condition.',
     location: 'Tech Club Room',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
   },
   {
     id: 6,
@@ -70,6 +77,7 @@ const defaultProducts = [
     description: 'Smooth wooden drawing board with integrated T-square groove for architectural drafts.',
     location: 'Hostel Block C',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
   },
   {
     id: 7,
@@ -81,6 +89,7 @@ const defaultProducts = [
     description: 'Essential textbooks for first-year engineering: Mathematics, Physics, and Programming.',
     location: 'Cafeteria',
     seller: 'Campus Store',
+    uploadDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
   }
 ];
 
@@ -100,6 +109,46 @@ function getDistanceFromLatLonInKm(lat1, lon1, lat2, lon2) {
 
 function deg2rad(deg) { return deg * (Math.PI/180); }
 
+// Helper function to format upload date
+function formatUploadDate(date) {
+  if (!date) return 'Recently Added';
+  
+  const now = new Date();
+  const diffTime = Math.abs(now - new Date(date));
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays === 0) return 'Today';
+  if (diffDays === 1) return 'Yesterday';
+  if (diffDays < 7) return `${diffDays} days ago`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+  return `${Math.floor(diffDays / 30)} months ago`;
+}
+
+// Helper function to check product availability
+function getProductStatus(product, inventory) {
+  const productKey = `${product.id}_${product.seller}`;
+  const status = inventory[productKey];
+  
+  if (!status) return { available: true, status: null };
+  
+  if (status.status === 'sold') {
+    return { available: false, status: 'sold', message: 'Sold Out' };
+  }
+  
+  if (status.status === 'rented') {
+    const endDate = new Date(status.rentalEndDate);
+    const now = new Date();
+    if (now < endDate) {
+      const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      return { available: false, status: 'rented', message: `Rented for ${daysLeft} more day${daysLeft !== 1 ? 's' : ''}` };
+    } else {
+      return { available: true, status: null };
+    }
+  }
+  
+  return { available: true, status: null };
+}
+
 const Storefront = () => {
   const [allProducts, setAllProducts] = useState(defaultProducts);
   const [cart, setCart] = useState([]);
@@ -110,29 +159,73 @@ const Storefront = () => {
   const [userRole, setUserRole] = useState('');
   const [loyaltyPoints, setLoyaltyPoints] = useState(0);
   const [locationStatus, setLocationStatus] = useState('checking');
+  const [inventory, setInventory] = useState({});
   const navigate = useNavigate();
+
+  // Memoized filtered products
+  const filteredProducts = useMemo(() => {
+    const products = allProducts.filter(product => {
+      const { available } = getProductStatus(product, inventory);
+      return available;
+    });
+    return products;
+  }, [allProducts, inventory]);
+
+  // Function to refresh products from database
+  const refreshProducts = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/products`);
+      
+      const productsData = Array.isArray(response.data) ? response.data : 
+                          (response.data && Array.isArray(response.data.data) ? response.data.data : []);
+                          
+      const dbProducts = productsData.map(product => ({
+        ...product,
+        id: product._id || product.id,
+        seller: product.seller || (product.sellerId && product.sellerId.name) || 'Campus Store',
+        price: product.salePrice || product.price,
+      }));
+      
+      console.log('Refreshing products from database:', dbProducts.length, 'items found');
+      
+      const dbProductIds = new Set(dbProducts.map(p => p.id));
+      const filteredDefaults = defaultProducts.filter(p => !dbProductIds.has(p.id));
+      
+      // dbProducts first
+      setAllProducts([...dbProducts, ...filteredDefaults]);
+    } catch (error) {
+      console.error('Error fetching products from database:', error);
+      const userListings = JSON.parse(localStorage.getItem('userListings') || '[]');
+      
+      const ulProductIds = new Set(userListings.map(p => p.id));
+      const filteredDefaults = defaultProducts.filter(p => !ulProductIds.has(p.id));
+      
+      setAllProducts([...userListings, ...filteredDefaults]);
+    }
+  };
 
   useEffect(() => {
     // Load cart
     const savedCart = localStorage.getItem('cart');
     if (savedCart) setCart(JSON.parse(savedCart));
 
-    // Load user listings and merge
-    const userListings = JSON.parse(localStorage.getItem('userListings') || '[]');
-    if (userListings.length > 0) {
-      setAllProducts([...defaultProducts, ...userListings]);
-    }
+    // Load inventory
+    const savedInventory = localStorage.getItem('productInventory');
+    if (savedInventory) setInventory(JSON.parse(savedInventory));
+
+    // Load products from database
+    refreshProducts();
 
     // Check auth
     const token = localStorage.getItem('token');
     const userData = localStorage.getItem('user');
     let userEmail = 'guest';
     if (token && userData) {
-      const user = JSON.parse(userData);
+      const parsedUser = JSON.parse(userData);
       setIsLoggedIn(true);
-      setUserName(user.name || 'Student');
-      setUserRole(user.role || 'student');
-      userEmail = user.email;
+      setUserName(parsedUser.name || 'Student');
+      setUserRole(parsedUser.role || 'student');
+      userEmail = parsedUser.email;
     }
 
     // Load loyalty points
@@ -151,6 +244,25 @@ const Storefront = () => {
     } else {
       setLocationStatus('denied_permission');
     }
+
+    // Listen for storage changes to detect new products
+    const handleStorageChange = (e) => {
+      if (e.key === 'productsUpdated') {
+        console.log('Storage change detected for products');
+        refreshProducts();
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+
+    const intervalId = setInterval(() => {
+      refreshProducts();
+    }, 10000); // Check every 10 seconds
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      clearInterval(intervalId);
+    };
   }, []);
 
   const handleLogout = () => {
@@ -162,6 +274,18 @@ const Storefront = () => {
   };
 
   const handleAddToCart = (product, type = 'sale') => {
+    if (isLoggedIn && product.seller === userName) {
+      alert('❌ You cannot add your own listed item to the cart.');
+      return;
+    }
+
+    const existingInCart = cart.find(item => item.id === product.id);
+    
+    if (existingInCart && existingInCart.listingType !== type) {
+      alert(`⚠️ This product is already in your cart.`);
+      return;
+    }
+
     const sPrice = product.salePrice || product.price;
     const rPrice = product.rentPrice;
 
@@ -188,7 +312,6 @@ const Storefront = () => {
 
   const cartTotal = cart.reduce((total, item) => total + item.price, 0);
 
-  // --- LOCATION BLOCKED SCREENS ---
   if (locationStatus === 'checking') {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', background: '#f8fafc' }}>
@@ -217,10 +340,8 @@ const Storefront = () => {
     );
   }
 
-  // --- STOREFRONT ---
   return (
     <div className="store-container">
-      {/* Navbar */}
       <nav className="store-nav">
         <div className="nav-left">
           <Menu className="icon-menu" size={28} />
@@ -239,10 +360,15 @@ const Storefront = () => {
               Sell Item
             </Link>
             {isLoggedIn && (
-              <Link to="/orders" className="btn-sell" style={{ background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0', marginLeft: '0.5rem' }}>
-                <Package size={18} />
-                My Orders
-              </Link>
+              <>
+                <Link to="/dashboard" className="btn-sell" style={{ background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0', marginLeft: '0.5rem' }}>
+                  📊 Dashboard
+                </Link>
+                <Link to="/orders" className="btn-sell" style={{ background: '#fff', color: '#1e293b', border: '1px solid #e2e8f0', marginLeft: '0.5rem' }}>
+                  <Package size={18} />
+                  My Orders
+                </Link>
+              </>
             )}
             {userRole === 'admin' && (
               <Link to="/admin" className="btn-sell" style={{ background: '#4f46e5', marginLeft: '0.5rem' }}>
@@ -277,7 +403,6 @@ const Storefront = () => {
         </div>
       </nav>
 
-      {/* Cart Drawer */}
       {isCartOpen && (
         <div className="cart-overlay" onClick={() => setIsCartOpen(false)}>
           <div className="cart-drawer" onClick={(e) => e.stopPropagation()}>
@@ -320,9 +445,23 @@ const Storefront = () => {
         </div>
       )}
 
-      {/* Hero */}
-      <header className="hero-section">
-        <div className="hero-content">
+      <header className="hero-section" style={{
+        backgroundImage: 'url("/images/hero-background.svg")',
+        backgroundSize: 'cover',
+        backgroundPosition: 'center',
+        backgroundRepeat: 'no-repeat',
+        position: 'relative'
+      }}>
+        <div style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'linear-gradient(135deg, rgba(79, 70, 229, 0.8) 0%, rgba(147, 51, 234, 0.8) 100%)',
+          zIndex: 0
+        }}></div>
+        <div className="hero-content" style={{ position: 'relative', zIndex: 1 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', padding: '0.5rem 1rem', borderRadius: '9999px', fontWeight: '600', marginBottom: '2rem' }}>
             <MapPin size={16} /> Verified: Vignan University, Vadlamudi
           </div>
@@ -332,76 +471,157 @@ const Storefront = () => {
         </div>
       </header>
 
-      {/* Products Grid */}
       <main className="main-content">
+        <div className="promo-section">
+          <div className="promo-content">
+            <h3>Want to see your stuff here?</h3>
+            <p>Make some extra cash by selling items in your community. Go on, it's quick and easy.</p>
+            <Link to="/sell" className="btn-start-selling">
+              <Zap size={20} />
+              Start Selling
+            </Link>
+          </div>
+          <div className="promo-visual">
+            <div className="promo-icon">📦</div>
+          </div>
+        </div>
+
         <div className="section-header">
-          <h2>Trending Products</h2>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2>Trending Products</h2>
+            <button 
+              onClick={refreshProducts}
+              style={{
+                background: '#4f46e5',
+                color: 'white',
+                border: 'none',
+                padding: '0.5rem 1rem',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '0.9rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem'
+              }}
+            >
+              🔄 Refresh Items
+            </button>
+          </div>
           <div className="header-line"></div>
+          {allProducts.length > defaultProducts.length && (
+            <div style={{ 
+              background: '#e0f2fe', 
+              color: '#0c4a6e', 
+              padding: '0.5rem 1rem', 
+              borderRadius: '6px', 
+              fontSize: '0.85rem',
+              marginTop: '0.5rem'
+            }}>
+              Showing {allProducts.length - defaultProducts.length} user-added items + {defaultProducts.length} default items
+            </div>
+          )}
         </div>
         <div className="products-grid">
-          {allProducts.map((product) => (
-            <div key={product.id} className="product-card">
-              <div className="card-image-wrapper">
-                <img src={product.image} alt={product.name} className="product-image" />
-                <div className="category-badge" style={{ background: (product.rentPrice && !product.salePrice && !product.price) ? '#f59e0b' : '', color: (product.rentPrice && !product.salePrice && !product.price) ? '#fff' : '' }}>
-                  {(product.rentPrice && !product.salePrice && !product.price) ? `${product.category} (Rent)` : product.category}
-                </div>
-              </div>
-              <div className="card-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
-                  <div className="rating">
-                    <Star size={16} fill="#fbbf24" color="#fbbf24" />
-                    <span>{product.rating}</span>
-                  </div>
-                  <div className="seller-tag">
-                    {product.seller === 'Campus Store' ? '🏬' : '🎓'} {product.seller}
-                  </div>
-                </div>
-                <h3 className="product-name">{product.name}</h3>
-                <p className="product-desc">{product.description}</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: '500' }}>
-                  <MapPin size={14} color="#4f46e5" />
-                  Pickup: {product.location}
-                </div>
-                <div className="card-footer" style={{ flexDirection: 'column', gap: '0.75rem', alignItems: 'stretch' }}>
-                  {(product.salePrice || product.price) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span className="product-price">₹{product.salePrice || product.price}</span>
-                      <button
-                        className="btn-add-cart"
-                        onClick={() => handleAddToCart(product, 'sale')}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: addedItems[product.id] ? '#10b981' : '',
-                          color: addedItems[product.id] ? '#fff' : '',
-                          borderColor: addedItems[product.id] ? '#10b981' : ''
-                        }}
-                      >
-                        {addedItems[product.id] ? 'Added!' : 'Buy'}
-                      </button>
-                    </div>
-                  )}
-                  {product.rentPrice && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: (product.salePrice || product.price) ? '0.75rem' : '0', borderTop: (product.salePrice || product.price) ? '1px dashed #e2e8f0' : 'none' }}>
-                      <span className="product-price">₹{product.rentPrice}<span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '500' }}>/day</span></span>
-                      <button
-                        className="btn-add-cart"
-                        onClick={() => handleAddToCart(product, 'rent')}
-                        style={{
-                          padding: '0.5rem 1rem',
-                          background: addedItems[product.id] ? '#10b981' : '#fef3c7',
-                          color: addedItems[product.id] ? '#fff' : '#d97706',
-                          borderColor: addedItems[product.id] ? '#10b981' : '#fcd34d'
-                        }}
-                      >
-                        {addedItems[product.id] ? 'Added!' : 'Rent'}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+          {filteredProducts.length === 0 ? (
+            <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '3rem', color: '#64748b' }}>
+              <Package size={48} style={{ margin: '0 auto 1rem' }} />
+              <p>No products available at the moment.</p>
             </div>
-          ))}
+          ) : (
+            filteredProducts.map((product) => {
+              const productStatus = getProductStatus(product, inventory);
+              return (
+                <div key={product.id} className={`product-card ${!productStatus.available ? 'unavailable' : ''}`} style={{ opacity: !productStatus.available ? 0.6 : 1, pointerEvents: !productStatus.available ? 'none' : 'auto' }}>
+                  <div className="card-image-wrapper">
+                    <img src={product.image} alt={product.name} className="product-image" />
+                    <div className="category-badge" style={{ background: (product.rentPrice && !product.salePrice && !product.price) ? '#f59e0b' : '', color: (product.rentPrice && !product.salePrice && !product.price) ? '#fff' : '' }}>
+                      {(product.rentPrice && !product.salePrice && !product.price) ? `${product.category} (Rent)` : product.category}
+                    </div>
+                    {!productStatus.available && (
+                      <div className={`product-status-badge ${productStatus.status === 'rented' ? 'status-rented' : 'status-sold'}`}>
+                        {productStatus.message}
+                        {productStatus.status === 'rented' && (
+                          <div className="status-countdown" style={{ marginTop: '0.25rem', fontSize: '0.65rem' }}>
+                            Returns soon
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                  <div className="card-body">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                      <div className="rating">
+                        <Star size={16} fill="#fbbf24" color="#fbbf24" />
+                        <span>{product.rating}</span>
+                      </div>
+                      <div className="seller-tag">
+                        {product.seller === 'Campus Store' ? '🏬' : '🎓'} {product.seller}
+                      </div>
+                    </div>
+                    <h3 className="product-name">{product.name}</h3>
+                    <p className="product-desc">{product.description}</p>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: '500' }}>
+                      <MapPin size={14} color="#4f46e5" />
+                      Pickup: {product.location}
+                    </div>
+                    <div className="card-footer" style={{ flexDirection: 'column', gap: '0.75rem', alignItems: 'stretch' }}>
+                      <div className="product-upload-date">
+                        <Calendar size={12} style={{ marginRight: '0.25rem', display: 'inline' }} />
+                        Uploaded {formatUploadDate(product.uploadDate)}
+                      </div>
+                      
+                      {(product.salePrice || product.price) && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className="product-price">₹{product.salePrice || product.price}</span>
+                          {isLoggedIn && product.seller === userName ? (
+                            <div style={{ padding: '0.5rem 1rem', background: '#f3f4f6', color: '#6b7280', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500' }}>
+                              Your Item
+                            </div>
+                          ) : (
+                            <button
+                              className="btn-add-cart"
+                              onClick={() => handleAddToCart(product, 'sale')}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                background: addedItems[product.id] ? '#10b981' : '',
+                                color: addedItems[product.id] ? '#fff' : '',
+                                borderColor: addedItems[product.id] ? '#10b981' : ''
+                              }}
+                            >
+                              {addedItems[product.id] ? 'Added!' : 'Buy'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                      {product.rentPrice && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: (product.salePrice || product.price) ? '0.75rem' : '0', borderTop: (product.salePrice || product.price) ? '1px dashed #e2e8f0' : 'none' }}>
+                          <span className="product-price">₹{product.rentPrice}<span style={{ fontSize: '0.9rem', color: '#64748b', fontWeight: '500' }}>/day</span></span>
+                          {isLoggedIn && product.seller === userName ? (
+                            <div style={{ padding: '0.5rem 1rem', background: '#f3f4f6', color: '#6b7280', borderRadius: '6px', fontSize: '0.9rem', fontWeight: '500' }}>
+                              Your Item
+                            </div>
+                          ) : (
+                            <button
+                              className="btn-add-cart"
+                              onClick={() => handleAddToCart(product, 'rent')}
+                              style={{
+                                padding: '0.5rem 1rem',
+                                background: addedItems[product.id] ? '#10b981' : '#fef3c7',
+                                color: addedItems[product.id] ? '#fff' : '#d97706',
+                                borderColor: addedItems[product.id] ? '#10b981' : '#fcd34d'
+                              }}
+                            >
+                              {addedItems[product.id] ? 'Added!' : 'Rent'}
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              );
+            })
+          )}
         </div>
       </main>
     </div>

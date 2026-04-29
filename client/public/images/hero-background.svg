@@ -1,0 +1,130 @@
+<svg width="1920" height="1080" viewBox="0 0 1920 1080" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="groundGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#48bb78;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#38a169;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="buildingGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#e2e8f0;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#cbd5e0;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Sky Background -->
+  <rect width="1920" height="1080" fill="url(#skyGradient)" />
+  
+  <!-- Clouds -->
+  <ellipse cx="200" cy="150" rx="80" ry="40" fill="rgba(255,255,255,0.3)" />
+  <ellipse cx="280" cy="140" rx="100" ry="50" fill="rgba(255,255,255,0.3)" />
+  <ellipse cx="350" cy="160" rx="60" ry="30" fill="rgba(255,255,255,0.3)" />
+  
+  <ellipse cx="1200" cy="200" rx="90" ry="45" fill="rgba(255,255,255,0.25)" />
+  <ellipse cx="1280" cy="190" rx="110" ry="55" fill="rgba(255,255,255,0.25)" />
+  <ellipse cx="1370" cy="210" rx="70" ry="35" fill="rgba(255,255,255,0.25)" />
+  
+  <ellipse cx="600" cy="100" rx="70" ry="35" fill="rgba(255,255,255,0.2)" />
+  <ellipse cx="660" cy="95" rx="85" ry="42" fill="rgba(255,255,255,0.2)" />
+  
+  <!-- University Buildings -->
+  <!-- Main Building -->
+  <rect x="300" y="400" width="200" height="300" fill="url(#buildingGradient)" />
+  <rect x="320" y="420" width="40" height="40" fill="#4a5568" />
+  <rect x="380" y="420" width="40" height="40" fill="#4a5568" />
+  <rect x="440" y="420" width="40" height="40" fill="#4a5568" />
+  <rect x="320" y="480" width="40" height="40" fill="#4a5568" />
+  <rect x="380" y="480" width="40" height="40" fill="#4a5568" />
+  <rect x="440" y="480" width="40" height="40" fill="#4a5568" />
+  <rect x="320" y="540" width="40" height="40" fill="#4a5568" />
+  <rect x="380" y="540" width="40" height="40" fill="#4a5568" />
+  <rect x="440" y="540" width="40" height="40" fill="#4a5568" />
+  <rect x="320" y="600" width="40" height="40" fill="#4a5568" />
+  <rect x="380" y="600" width="40" height="40" fill="#4a5568" />
+  <rect x="440" y="600" width="40" height="40" fill="#4a5568" />
+  <polygon points="300,400 400,350 500,400" fill="#2d3748" />
+  
+  <!-- Library Building -->
+  <rect x="600" y="450" width="180" height="250" fill="url(#buildingGradient)" />
+  <rect x="615" y="465" width="35" height="35" fill="#4a5568" />
+  <rect x="665" y="465" width="35" height="35" fill="#4a5568" />
+  <rect x="715" y="465" width="35" height="35" fill="#4a5568" />
+  <rect x="615" y="515" width="35" height="35" fill="#4a5568" />
+  <rect x="665" y="515" width="35" height="35" fill="#4a5568" />
+  <rect x="715" y="515" width="35" height="35" fill="#4a5568" />
+  <rect x="615" y="565" width="35" height="35" fill="#4a5568" />
+  <rect x="665" y="565" width="35" height="35" fill="#4a5568" />
+  <rect x="715" y="565" width="35" height="35" fill="#4a5568" />
+  <rect x="615" y="615" width="35" height="35" fill="#4a5568" />
+  <rect x="665" y="615" width="35" height="35" fill="#4a5568" />
+  <rect x="715" y="615" width="35" height="35" fill="#4a5568" />
+  <polygon points="600,450 690,400 780,450" fill="#2d3748" />
+  
+  <!-- Engineering Building -->
+  <rect x="900" y="380" width="220" height="320" fill="url(#buildingGradient)" />
+  <rect x="920" y="400" width="45" height="45" fill="#4a5568" />
+  <rect x="980" y="400" width="45" height="45" fill="#4a5568" />
+  <rect x="1040" y="400" width="45" height="45" fill="#4a5568" />
+  <rect x="920" y="460" width="45" height="45" fill="#4a5568" />
+  <rect x="980" y="460" width="45" height="45" fill="#4a5568" />
+  <rect x="1040" y="460" width="45" height="45" fill="#4a5568" />
+  <rect x="920" y="520" width="45" height="45" fill="#4a5568" />
+  <rect x="980" y="520" width="45" height="45" fill="#4a5568" />
+  <rect x="1040" y="520" width="45" height="45" fill="#4a5568" />
+  <rect x="920" y="580" width="45" height="45" fill="#4a5568" />
+  <rect x="980" y="580" width="45" height="45" fill="#4a5568" />
+  <rect x="1040" y="580" width="45" height="45" fill="#4a5568" />
+  <polygon points="900,380 1010,320 1120,380" fill="#2d3748" />
+  
+  <!-- Ground/Campus Area -->
+  <rect x="0" y="700" width="1920" height="380" fill="url(#groundGradient)" />
+  
+  <!-- Trees -->
+  <circle cx="150" cy="680" r="40" fill="#2f855a" />
+  <rect x="140" y="680" width="20" height="40" fill="#8b4513" />
+  
+  <circle cx="550" cy="690" r="35" fill="#2f855a" />
+  <rect x="542" y="690" width="16" height="35" fill="#8b4513" />
+  
+  <circle cx="850" cy="685" r="38" fill="#2f855a" />
+  <rect x="841" y="685" width="18" height="38" fill="#8b4513" />
+  
+  <circle cx="1250" cy="680" r="42" fill="#2f855a" />
+  <rect x="1240" y="680" width="20" height="42" fill="#8b4513" />
+  
+  <circle cx="1650" cy="690" r="36" fill="#2f855a" />
+  <rect x="1642" y="690" width="16" height="36" fill="#8b4513" />
+  
+  <!-- Walking Paths -->
+  <rect x="0" y="750" width="1920" height="8" fill="#a0aec0" opacity="0.6" />
+  <rect x="0" y="850" width="1920" height="8" fill="#a0aec0" opacity="0.6" />
+  <rect x="0" y="950" width="1920" height="8" fill="#a0aec0" opacity="0.6" />
+  
+  <!-- Students/People (simplified) -->
+  <circle cx="250" cy="730" r="8" fill="#2d3748" />
+  <rect x="245" y="738" width="10" height="20" fill="#4a5568" />
+  
+  <circle cx="450" cy="740" r="8" fill="#2d3748" />
+  <rect x="445" y="748" width="10" height="20" fill="#4a5568" />
+  
+  <circle cx="750" cy="735" r="8" fill="#2d3748" />
+  <rect x="745" y="743" width="10" height="20" fill="#4a5568" />
+  
+  <circle cx="1300" cy="730" r="8" fill="#2d3748" />
+  <rect x="1295" y="738" width="10" height="20" fill="#4a5568" />
+  
+  <circle cx="1550" cy="740" r="8" fill="#2d3748" />
+  <rect x="1545" y="748" width="10" height="20" fill="#4a5568" />
+  
+  <!-- Delivery Boxes (logistics theme) -->
+  <rect x="350" y="720" width="25" height="20" fill="#ed8936" />
+  <rect x="355" y="715" width="15" height="5" fill="#dd6b20" />
+  
+  <rect x="680" y="730" width="25" height="20" fill="#3182ce" />
+  <rect x="685" y="725" width="15" height="5" fill="#2c5282" />
+  
+  <rect x="1100" y="725" width="25" height="20" fill="#805ad5" />
+  <rect x="1105" y="720" width="15" height="5" fill="#6b46c1" />
+</svg>

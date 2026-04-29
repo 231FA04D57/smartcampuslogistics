@@ -211,8 +211,20 @@ h1, h2, h3, h4, .store-brand {
   text-align: center;
   position: relative;
   overflow: hidden;
-  background: linear-gradient(135deg, #eef2ff, #f8fafc);
+  background: linear-gradient(135deg, rgba(79, 70, 229, 0.75), rgba(16, 185, 129, 0.75)), url('https://images.unsplash.com/photo-1523240795612-9a054649c1de?w=1400&h=700&fit=crop') center/cover no-repeat;
+  background-attachment: fixed;
   border-bottom: 1px solid var(--surface-border);
+  min-height: 500px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 900px;
+  padding: 2rem;
 }
 
 .hero-content h1 {
@@ -220,15 +232,18 @@ h1, h2, h3, h4, .store-brand {
   font-weight: 800;
   line-height: 1.1;
   margin-bottom: 1.5rem;
-  color: #0f172a;
+  color: #fff;
+  text-shadow: 3px 3px 12px rgba(0, 0, 0, 0.3);
 }
 
 .hero-content p {
   font-size: 1.25rem;
-  color: var(--text-muted);
+  color: #fff;
   max-width: 600px;
   margin: 0 auto 2.5rem;
   line-height: 1.6;
+  text-shadow: 2px 2px 6px rgba(0, 0, 0, 0.2);
+  font-weight: 500;
 }
 
 .btn-hero {
@@ -872,4 +887,234 @@ select.form-input {
   max-width: 130px;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+/* Upload Date Badge */
+.upload-date-badge {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.25rem 0.65rem;
+  border-radius: 6px;
+  margin-top: 0.5rem;
+}
+
+/* Promo Section */
+.promo-section {
+  background: linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%);
+  border-radius: 24px;
+  padding: 3rem;
+  margin: 3rem 0;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 3rem;
+  align-items: center;
+  box-shadow: 0 20px 50px rgba(59, 130, 246, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.promo-section::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -10%;
+  width: 400px;
+  height: 400px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+  z-index: 0;
+}
+
+.promo-content {
+  position: relative;
+  z-index: 2;
+  color: white;
+}
+
+.promo-content h3 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  margin-bottom: 1rem;
+  line-height: 1.2;
+}
+
+.promo-content p {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
+  margin-bottom: 2rem;
+}
+
+.btn-start-selling {
+  background: #fff;
+  color: #3b82f6;
+  border: none;
+  padding: 1rem 2rem;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+}
+
+.btn-start-selling:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3);
+}
+
+.promo-visual {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 300px;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.promo-icon {
+  font-size: 5rem;
+  animation: bounce 2s ease-in-out infinite;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-20px); }
+}
+
+/* Product Upload Date */
+.product-upload-date {
+  font-size: 0.75rem;
+  color: #94a3b8;
+  background: #f1f5f9;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  display: inline-block;
+  margin-top: 0.5rem;
+  border: 1px solid #e2e8f0;
+}
+
+@media (max-width: 768px) {
+  .promo-section {
+    grid-template-columns: 1fr;
+    padding: 2rem;
+    gap: 2rem;
+  }
+
+  .promo-content h3 {
+    font-size: 1.75rem;
+  }
+
+  .promo-content p {
+    font-size: 1rem;
+  }
+
+  .promo-visual {
+    min-height: 200px;
+  }
+
+  .promo-icon {
+    font-size: 3.5rem;
+  }
+}
+
+/* Rental Duration Selector */
+.rental-duration-group {
+  display: flex;
+  align-items: flex-end;
+  gap: 1rem;
+}
+
+.duration-input-wrapper {
+  flex: 1;
+}
+
+.duration-input-wrapper label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  color: var(--text-main);
+}
+
+.duration-input {
+  width: 100%;
+  padding: 0.875rem 1rem;
+  background: #f8fafc;
+  border: 1px solid #cbd5e1;
+  border-radius: 12px;
+  color: var(--text-main);
+  font-size: 1rem;
+  font-weight: 600;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.duration-input:focus {
+  border-color: var(--primary);
+  background: #ffffff;
+  box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
+}
+
+.duration-display {
+  padding: 0.875rem 1rem;
+  background: #eff6ff;
+  border: 1px solid #cffafe;
+  border-radius: 12px;
+  color: #0369a1;
+  font-size: 0.95rem;
+  font-weight: 600;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+}
+
+/* Product Status Badges */
+.product-status-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-align: center;
+  backdrop-filter: blur(10px);
+  z-index: 10;
+}
+
+.status-rented {
+  background: rgba(251, 146, 60, 0.95);
+  color: #fff;
+  border: 1px solid rgba(251, 146, 60, 0.5);
+}
+
+.status-sold {
+  background: rgba(239, 68, 68, 0.95);
+  color: #fff;
+  border: 1px solid rgba(239, 68, 68, 0.5);
+}
+
+.status-countdown {
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+  opacity: 0.9;
+}
+
+/* Product Card Overlay for Unavailable */
+.product-card.unavailable {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.product-card.unavailable .product-image {
+  filter: grayscale(50%);
 }

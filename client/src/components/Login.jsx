@@ -5,28 +5,40 @@ import { Mail, Lock, LogIn, ArrowLeft } from 'lucide-react';
 import { API_URL } from '../config';
 
 const Login = () => {
-  const [formData, setFormData] = useState({ email: '', password: '' });
+  const [formData, setFormData] = useState({ emailOrPhone: '', password: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  const { email, password } = formData;
+  const { emailOrPhone, password } = formData;
 
   const onChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
+  const isPhoneNumber = (value) => {
+    const phoneRegex = /^[0-9]{10}$/;
+    return phoneRegex.test(value.replace(/[^\d]/g, ''));
+  };
+
+  const isValidInput = (value) => {
+    if (value === 'admin') return true;
+    if (isPhoneNumber(value)) return true;
+    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    return collegeRegex.test(value.toLowerCase());
+  };
+
   const onSubmit = async (e) => {
     e.preventDefault();
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
-    const normalizedEmail = email.toLowerCase().trim();
-    if (!collegeRegex.test(normalizedEmail) && normalizedEmail !== 'admin') {
-      setError('Email must start with 2 and have exactly 10 characters before the @ symbol.');
+    const trimmedInput = emailOrPhone.toLowerCase().trim();
+    
+    if (!isValidInput(trimmedInput)) {
+      setError('Please enter a valid college email (starting with 2) or 10-digit phone number.');
       return;
     }
 
     setLoading(true);
     setError('');
     try {
-      const payload = { ...formData, email: normalizedEmail };
+      const payload = { emailOrPhone: trimmedInput, password };
       const res = await axios.post(`${API_URL}/api/auth/login`, payload);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
@@ -54,16 +66,16 @@ const Login = () => {
 
           <form onSubmit={onSubmit}>
             <div className="form-group">
-              <label htmlFor="email">College Email Address</label>
+              <label htmlFor="emailOrPhone">College Email or Phone Number</label>
               <div className="input-wrapper">
                 <Mail className="input-icon" />
                 <input
                   type="text"
-                  id="email"
-                  name="email"
+                  id="emailOrPhone"
+                  name="emailOrPhone"
                   className="form-input"
-                  placeholder="23X1A05B1@gmail.com"
-                  value={email}
+                  placeholder="23X1A05B1@gmail.com or 9876543210"
+                  value={emailOrPhone}
                   onChange={onChange}
                   required
                 />

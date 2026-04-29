@@ -70,11 +70,15 @@ router.post('/send-otp', async (req, res) => {
 // Register a new user
 router.post('/register', async (req, res) => {
   try {
-    const { name, email, password, role, otp } = req.body;
+    const { name, email, phone, alternateEmail, password, role, otp } = req.body;
 
     const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
     if (!collegeRegex.test(email)) {
       return res.status(400).json({ message: 'Email must start with 2 and have exactly 10 characters before the @ symbol.' });
+    }
+
+    if (!phone || !name || !password) {
+      return res.status(400).json({ message: 'Name, phone number, and password are required' });
     }
 
     if (!otp) {
@@ -101,6 +105,8 @@ router.post('/register', async (req, res) => {
     user = new User({
       name,
       email,
+      phone,
+      alternateEmail: alternateEmail || null,
       password: hashedPassword,
       role
     });
@@ -124,7 +130,7 @@ router.post('/register', async (req, res) => {
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
-        res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+        res.status(201).json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, alternateEmail: user.alternateEmail, role: user.role } });
       }
     );
   } catch (err) {
@@ -136,20 +142,28 @@ router.post('/register', async (req, res) => {
 // Login user
 router.post('/login', async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const { emailOrPhone, password } = req.body;
 
     const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
-    const normalizedEmail = email.toLowerCase().trim();
-    console.log('Login attempt:', { email: req.body.email, password: req.body.password, normalizedEmail });
+    const normalizedInput = emailOrPhone.toLowerCase().trim();
+    const isPhoneNumber = /^[0-9]{10}$/.test(normalizedInput.replace(/[^\d]/g, ''));
+    
+    console.log('Login attempt:', { input: req.body.emailOrPhone, normalized: normalizedInput, isPhone: isPhoneNumber });
 
-    if (!collegeRegex.test(normalizedEmail) && normalizedEmail !== 'admin') {
-      console.log('Regex failed');
-      return res.status(400).json({ message: 'Email must start with 2 and have exactly 10 characters before the @ symbol.' });
+    if (!isPhoneNumber && !collegeRegex.test(normalizedInput) && normalizedInput !== 'admin') {
+      console.log('Validation failed');
+      return res.status(400).json({ message: 'Please enter a valid college email or phone number' });
     }
 
-    // Check if user exists
-    let user = await User.findOne({ email: normalizedEmail === 'admin' ? 'admin' : email });
-    console.log('User found:', user ? user.email : 'null');
+    // Check if user exists - search by email or phone
+    let user;
+    if (isPhoneNumber) {
+      user = await User.findOne({ phone: normalizedInput.replace(/[^\d]/g, '') });
+    } else {
+      user = await User.findOne({ email: normalizedInput === 'admin' ? 'admin' : normalizedInput });
+    }
+    
+    console.log('User found:', user ? (user.email || user.phone) : 'null');
     if (!user) {
       return res.status(400).json({ message: 'Invalid Credentials' });
     }
@@ -175,12 +189,95 @@ router.post('/login', async (req, res) => {
       { expiresIn: 360000 },
       (err, token) => {
         if (err) throw err;
-        res.json({ token, user: { id: user.id, name: user.name, email: user.email, role: user.role } });
+        res.json({ token, user: { id: user.id, name: user.name, email: user.email, phone: user.phone, alternateEmail: user.alternateEmail, role: user.role } });
       }
     );
   } catch (err) {
     console.error(err.message);
     res.status(500).send('Server error');
+  }
+});
+
+// Middleware to verify JWT token
+const verifyToken = (req, res, next) => {
+  try {
+    const token = req.headers.authorization?.split(' ')[1];
+    if (!token) {
+      return res.status(401).json({ message: 'No token provided' });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+      if (err) {
+        return res.status(401).json({ message: 'Invalid token' });
+      }
+      req.userId = decoded.user.id;
+      next();
+    });
+  } catch (error) {
+    res.status(401).json({ message: 'Authentication error' });
+  }
+};
+
+// GET /api/auth/profile
+router.get('/profile', verifyToken, async (req, res) => {
+  try {
+    const userId = req.userId;
+    
+    // Find user by ID
+    const user = await User.findById(userId).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    res.json({
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        alternateEmail: user.alternateEmail,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Get profile error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// PUT /api/auth/update-profile
+router.put('/update-profile', verifyToken, async (req, res) => {
+  try {
+    const { name, phone, alternateEmail } = req.body;
+    const userId = req.userId;
+
+    // Find and update user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Update fields
+    if (name) user.name = name;
+    if (phone) user.phone = phone;
+    if (alternateEmail !== undefined) user.alternateEmail = alternateEmail || null;
+
+    await user.save();
+
+    res.json({
+      message: 'Profile updated successfully',
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        alternateEmail: user.alternateEmail,
+        role: user.role
+      }
+    });
+  } catch (error) {
+    console.error('Update profile error:', error);
+    res.status(500).json({ message: 'Server error' });
   }
 });
 
