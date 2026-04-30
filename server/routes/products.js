@@ -6,6 +6,11 @@ const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('cloudinary').v2;
 
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 // Middleware to verify JWT token
 const verifyToken = (req, res, next) => {
   try {
@@ -42,10 +47,10 @@ const upload = multer({ storage });
 // GET /api/products - Get all available products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find({ status: 'available' })
+    const products = await Product.find({ status: { $in: ['available', 'rented'] } })
       .populate('sellerId', 'name email')
       .sort({ uploadDate: -1 });
-    
+
     res.json(products);
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -58,7 +63,7 @@ router.get('/user', verifyToken, async (req, res) => {
   try {
     const products = await Product.find({ sellerId: req.userId })
       .sort({ uploadDate: -1 });
-    
+
     res.json(products);
   } catch (error) {
     console.error('Error fetching user products:', error);
@@ -83,7 +88,7 @@ router.post('/', verifyToken, (req, res, next) => {
 }, async (req, res) => {
   try {
     const { name, description, salePrice, rentPrice, category, location } = req.body;
-    
+
     if (!name || !description || !category || !location) {
       return res.status(400).json({ message: 'All required fields must be provided' });
     }
@@ -128,7 +133,7 @@ router.post('/', verifyToken, (req, res, next) => {
 router.put('/:id', verifyToken, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -138,7 +143,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     }
 
     const { name, description, salePrice, rentPrice, category, location } = req.body;
-    
+
     if (name) product.name = name;
     if (description) product.description = description;
     if (salePrice !== undefined) product.salePrice = salePrice ? parseFloat(salePrice) : null;
@@ -147,7 +152,7 @@ router.put('/:id', verifyToken, async (req, res) => {
     if (location) product.location = location;
 
     await product.save();
-    
+
     res.json({
       message: 'Product updated successfully',
       product
@@ -162,7 +167,7 @@ router.put('/:id', verifyToken, async (req, res) => {
 router.delete('/:id', verifyToken, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -172,7 +177,7 @@ router.delete('/:id', verifyToken, async (req, res) => {
     }
 
     await Product.findByIdAndDelete(req.params.id);
-    
+
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     console.error('Error deleting product:', error);
@@ -184,13 +189,13 @@ router.delete('/:id', verifyToken, async (req, res) => {
 router.post('/:id/rent', verifyToken, async (req, res) => {
   try {
     const { rentalDays } = req.body;
-    
+
     if (!rentalDays || rentalDays < 1) {
       return res.status(400).json({ message: 'Valid rental days required' });
     }
 
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -211,9 +216,9 @@ router.post('/:id/rent', verifyToken, async (req, res) => {
     product.status = 'rented';
     product.rentalEndDate = new Date(Date.now() + rentalDays * 24 * 60 * 60 * 1000);
     product.buyerId = req.userId;
-    
+
     await product.save();
-    
+
     res.json({
       message: 'Product rented successfully',
       product
@@ -228,7 +233,7 @@ router.post('/:id/rent', verifyToken, async (req, res) => {
 router.post('/:id/buy', verifyToken, async (req, res) => {
   try {
     const product = await Product.findById(req.params.id);
-    
+
     if (!product) {
       return res.status(404).json({ message: 'Product not found' });
     }
@@ -248,9 +253,9 @@ router.post('/:id/buy', verifyToken, async (req, res) => {
     // Update product status
     product.status = 'sold';
     product.buyerId = req.userId;
-    
+
     await product.save();
-    
+
     res.json({
       message: 'Product purchased successfully',
       product

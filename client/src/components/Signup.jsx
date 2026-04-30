@@ -25,9 +25,9 @@ const Signup = () => {
 
   const onSubmit = async (e) => {
     e.preventDefault();
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    const collegeRegex = /^2[a-zA-Z0-9]{8,9}@/;
     if (!collegeRegex.test(email)) {
-      setError('Email must start with 2 and have exactly 10 characters before the @ symbol. (e.g. 20X1A05B1@college.edu)');
+      setError('Email must start with 2 and have 9-10 characters before the @ symbol. (e.g. 23X1A05B1@college.edu)');
       return;
     }
 

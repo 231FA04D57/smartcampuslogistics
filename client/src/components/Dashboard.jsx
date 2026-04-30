@@ -34,51 +34,39 @@ const Dashboard = () => {
               }
             });
             
+            let currentUser = parsedUser;
             if (response.data && response.data.user) {
               // Update state and localStorage with fresh data from MongoDB
               localStorage.setItem('user', JSON.stringify(response.data.user));
-              setUser(response.data.user);
-              setEditData(response.data.user);
-              
-              // Get user's listings
-              const allListings = JSON.parse(localStorage.getItem('userListings') || '[]');
-              const userItems = allListings.filter(item => item.seller === response.data.user.name);
-              setUserListings(userItems);
-
-              // Get loyalty points
-              const pointsKey = `loyaltyPoints_${response.data.user.email}`;
-              const points = parseInt(localStorage.getItem(pointsKey) || '0');
-              setLoyaltyPoints(points);
-            } else {
-              // Fallback to localStorage data if API fails
-              setUser(parsedUser);
-              setEditData(parsedUser);
-
-              // Get user's listings
-              const allListings = JSON.parse(localStorage.getItem('userListings') || '[]');
-              const userItems = allListings.filter(item => item.seller === parsedUser.name);
-              setUserListings(userItems);
-
-              // Get loyalty points
-              const pointsKey = `loyaltyPoints_${parsedUser.email}`;
-              const points = parseInt(localStorage.getItem(pointsKey) || '0');
-              setLoyaltyPoints(points);
+              currentUser = response.data.user;
             }
+            setUser(currentUser);
+            setEditData(currentUser);
+
+            // Get loyalty points
+            const pointsKey = `loyaltyPoints_${currentUser.email}`;
+            const points = parseInt(localStorage.getItem(pointsKey) || '0');
+            setLoyaltyPoints(points);
           } catch (error) {
             console.error('Error fetching user data:', error);
             // Fallback to localStorage data if API fails
             setUser(parsedUser);
             setEditData(parsedUser);
 
-            // Get user's listings
-            const allListings = JSON.parse(localStorage.getItem('userListings') || '[]');
-            const userItems = allListings.filter(item => item.seller === parsedUser.name);
-            setUserListings(userItems);
-
-            // Get loyalty points
             const pointsKey = `loyaltyPoints_${parsedUser.email}`;
             const points = parseInt(localStorage.getItem(pointsKey) || '0');
             setLoyaltyPoints(points);
+          }
+
+          // Fetch user listings from backend
+          try {
+            const listingsResponse = await axios.get(`${API_URL}/api/products/user`, {
+              headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setUserListings(listingsResponse.data);
+          } catch (err) {
+            console.error('Error fetching user listings:', err);
+            setUserListings([]);
           }
         };
 
@@ -398,9 +386,15 @@ const Dashboard = () => {
                       borderRadius: '12px',
                       overflow: 'hidden',
                       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      transition: 'transform 0.2s'
+                      transition: 'transform 0.2s',
+                      position: 'relative'
                     }}>
-                      <img src={item.image} alt={item.name} style={{ width: '100%', height: '180px', objectFit: 'cover' }} />
+                      {item.status && item.status !== 'available' && (
+                         <div style={{ position: 'absolute', top: '10px', right: '10px', background: item.status === 'rented' ? '#f59e0b' : '#ef4444', color: 'white', padding: '0.25rem 0.5rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: 'bold' }}>
+                           {item.status === 'rented' ? 'Rented Out' : 'Sold'}
+                         </div>
+                      )}
+                      <img src={item.image} alt={item.name} style={{ width: '100%', height: '180px', objectFit: 'cover', opacity: item.status !== 'available' ? 0.7 : 1 }} />
                       <div style={{ padding: '1rem' }}>
                         <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#1e293b', marginBottom: '0.5rem' }}>{item.name}</h3>
                         <p style={{ fontSize: '0.85rem', color: '#64748b', marginBottom: '0.75rem' }}>{item.description.substring(0, 60)}...</p>

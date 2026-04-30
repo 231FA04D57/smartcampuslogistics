@@ -12,9 +12,9 @@ router.post('/send-otp', async (req, res) => {
   try {
     const { email } = req.body;
 
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    const collegeRegex = /^2[a-zA-Z0-9]{8,9}@/;
     if (!collegeRegex.test(email)) {
-      return res.status(400).json({ message: 'Email must start with 2 and have exactly 10 characters before the @ symbol.' });
+      return res.status(400).json({ message: 'Email must start with 2 and have 9 or 10 characters before the @ symbol.' });
     }
 
     // Check if user already exists
@@ -72,9 +72,9 @@ router.post('/register', async (req, res) => {
   try {
     const { name, email, phone, alternateEmail, password, role, otp } = req.body;
 
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    const collegeRegex = /^2[a-zA-Z0-9]{8,9}@/;
     if (!collegeRegex.test(email)) {
-      return res.status(400).json({ message: 'Email must start with 2 and have exactly 10 characters before the @ symbol.' });
+      return res.status(400).json({ message: 'Email must start with 2 and have 9 or 10 characters before the @ symbol.' });
     }
 
     if (!phone || !name || !password) {
@@ -144,7 +144,7 @@ router.post('/login', async (req, res) => {
   try {
     const { emailOrPhone, password } = req.body;
 
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    const collegeRegex = /^2[a-zA-Z0-9]{8,9}@/;
     const normalizedInput = emailOrPhone.toLowerCase().trim();
     const isPhoneNumber = /^[0-9]{10}$/.test(normalizedInput.replace(/[^\d]/g, ''));
     

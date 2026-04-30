@@ -126,6 +126,23 @@ function formatUploadDate(date) {
 
 // Helper function to check product availability
 function getProductStatus(product, inventory) {
+  // Check the actual product status from the database
+  if (product.status === 'sold') {
+    return { available: false, status: 'sold', message: 'Sold Out' };
+  }
+  
+  if (product.status === 'rented' && product.rentalEndDate) {
+    const endDate = new Date(product.rentalEndDate);
+    const now = new Date();
+    if (now < endDate) {
+      const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
+      return { available: false, status: 'rented', message: `Available in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` };
+    } else {
+      return { available: true, status: null };
+    }
+  }
+
+  // Fallback to local storage inventory (for backward compatibility/defaults)
   const productKey = `${product.id}_${product.seller}`;
   const status = inventory[productKey];
   
@@ -140,7 +157,7 @@ function getProductStatus(product, inventory) {
     const now = new Date();
     if (now < endDate) {
       const daysLeft = Math.ceil((endDate - now) / (1000 * 60 * 60 * 24));
-      return { available: false, status: 'rented', message: `Rented for ${daysLeft} more day${daysLeft !== 1 ? 's' : ''}` };
+      return { available: false, status: 'rented', message: `Available in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}` };
     } else {
       return { available: true, status: null };
     }
@@ -165,8 +182,9 @@ const Storefront = () => {
   // Memoized filtered products
   const filteredProducts = useMemo(() => {
     const products = allProducts.filter(product => {
-      const { available } = getProductStatus(product, inventory);
-      return available;
+      const { status } = getProductStatus(product, inventory);
+      // Show both available and rented items (filter out sold)
+      return status !== 'sold';
     });
     return products;
   }, [allProducts, inventory]);

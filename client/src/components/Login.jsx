@@ -22,7 +22,7 @@ const Login = () => {
   const isValidInput = (value) => {
     if (value === 'admin') return true;
     if (isPhoneNumber(value)) return true;
-    const collegeRegex = /^2[a-zA-Z0-9]{9}@/;
+    const collegeRegex = /^2[a-zA-Z0-9]{8,9}@/;
     return collegeRegex.test(value.toLowerCase());
   };
 
