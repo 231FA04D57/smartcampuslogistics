@@ -14,7 +14,10 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: "https://smartcampus-frontend.onrender.com",
+  credentials: true
+}));
 app.use(express.json());
 
 const connectDB = async () => {
