@@ -2,11 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
+const bcrypt = require('bcryptjs');
 const cloudinary = require('cloudinary').v2;
+
+const User = require('./models/User');
 
 const app = express();
 
-// Configure Cloudinary
+// Cloudinary config
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
   api_key: process.env.CLOUDINARY_API_KEY,
@@ -14,48 +17,44 @@ cloudinary.config({
 });
 
 // Middleware
-app.use(cors({
-  origin: "https://smartcampus-frontend.onrender.com",
-  credentials: true
-}));
+app.use(cors());
 app.use(express.json());
 
+// MongoDB Connect + Auto Admin Create
 const connectDB = async () => {
   try {
-    const uri = process.env.MONGO_URI;
+    await mongoose.connect(process.env.MONGO_URI);
 
-    if (!uri) {
-      throw new Error("MONGO_URI not found");
-    }
+    console.log("✅ MongoDB Connected Successfully!");
 
-    await mongoose.connect(uri);
-
-    console.log('✅ MongoDB Connected Successfully!');
-
-    const User = require('./models/User');
-    const bcrypt = require('bcryptjs');
-
+    // Check admin user
     const adminExists = await User.findOne({ email: 'admin' });
 
     if (!adminExists) {
-      const salt = await bcrypt.genSalt(10);
-      const hashedPassword = await bcrypt.hash('Admin@2026', salt);
+      const hashedPassword = await bcrypt.hash('Admin@2026', 10);
 
       await User.create({
         name: 'Super Admin',
         email: 'admin',
+        phone: '9999999999',
         password: hashedPassword,
         role: 'admin'
       });
 
-      console.log('👑 Admin user seeded successfully!');
+      console.log("👑 Admin user created successfully!");
+      console.log("Login:");
+      console.log("Username: admin");
+      console.log("Password: Admin@2026");
+    } else {
+      console.log("✅ Admin already exists");
     }
 
   } catch (error) {
-    console.error('MongoDB connection failed:', error.message);
+    console.error("❌ MongoDB Error:", error.message);
     process.exit(1);
   }
 };
+
 connectDB();
 
 // Routes
@@ -72,5 +71,5 @@ app.get('/', (req, res) => {
 const PORT = process.env.PORT || 5000;
 
 app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+  console.log(`🚀 Server started on port ${PORT}`);
 });
