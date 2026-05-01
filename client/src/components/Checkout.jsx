@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { CreditCard, Wallet, Banknote, ArrowLeft, CheckCircle, Calendar } from 'lucide-react';
+import axios from 'axios';
+import { API_URL } from '../config';
 
 const Checkout = () => {
   const [cart, setCart] = useState([]);
@@ -40,12 +42,33 @@ const Checkout = () => {
     return total + item.price;
   }, 0);
 
-  const handlePayment = (e) => {
+  const handlePayment = async (e) => {
     e.preventDefault();
     setLoading(true);
 
-    // Simulate payment processing
-    setTimeout(() => {
+    try {
+      const token = localStorage.getItem('token');
+      
+      // Make API calls for each item
+      for (let i = 0; i < cart.length; i++) {
+        const item = cart[i];
+        
+        // Skip default dummy products (they might not exist in the DB or use standard string IDs)
+        if (typeof item.id === 'string' && item.id.length > 20) {
+          if (item.listingType === 'rent') {
+            await axios.post(`${API_URL}/api/products/${item.id}/rent`, 
+              { rentalDays: rentalDurations[i] || 1 },
+              { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+          } else {
+            await axios.post(`${API_URL}/api/products/${item.id}/buy`, 
+              {}, 
+              { headers: { 'Authorization': `Bearer ${token}` } }
+            );
+          }
+        }
+      }
+
       setLoading(false);
       setSuccess(true);
       
@@ -69,7 +92,7 @@ const Checkout = () => {
       existingOrders.push(newOrder);
       localStorage.setItem(`userOrders_${userEmail}`, JSON.stringify(existingOrders));
 
-      // Mark products as rented/sold in inventory
+      // Mark products as rented/sold in inventory (local fallback)
       const inventory = JSON.parse(localStorage.getItem('productInventory') || '{}');
       cart.forEach((item, idx) => {
         const productKey = `${item.id}_${item.seller}`;
@@ -92,7 +115,11 @@ const Checkout = () => {
       setTimeout(() => {
         navigate('/orders');
       }, 3000);
-    }, 2000);
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setLoading(false);
+      alert('There was an error processing your checkout. Please try again.');
+    }
   };
 
   if (success) {

@@ -120,6 +120,21 @@ const Dashboard = () => {
     }
   };
 
+  const handleGiveItem = async (productId) => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await axios.post(`${API_URL}/api/products/${productId}/deliver`, {}, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      if (response.data) {
+        setUserListings(userListings.map(item => (item._id === productId || item.id === productId) ? { ...item, isDelivered: true } : item));
+      }
+    } catch (error) {
+      console.error('Error marking item as delivered:', error);
+      alert('Failed to mark item as delivered');
+    }
+  };
+
   if (!user) return null;
 
   return (
@@ -403,6 +418,22 @@ const Dashboard = () => {
                           {item.rentPrice && <span style={{ background: '#d1fae5', color: '#065f46', padding: '0.25rem 0.75rem', borderRadius: '4px', fontSize: '0.85rem', fontWeight: '500' }}>Rent: ₹{item.rentPrice}/day</span>}
                         </div>
                         <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📍 {item.location}</p>
+                        {item.status && item.status !== 'available' && (
+                          <div style={{ marginTop: '1rem', borderTop: '1px solid #e2e8f0', paddingTop: '0.75rem' }}>
+                            {item.isDelivered ? (
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', color: '#16a34a', fontSize: '0.9rem', fontWeight: '500' }}>
+                                <Award size={16} /> Product Delivered
+                              </div>
+                            ) : (
+                              <button 
+                                onClick={() => handleGiveItem(item._id || item.id)}
+                                style={{ width: '100%', padding: '0.5rem', background: '#10b981', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontSize: '0.9rem', fontWeight: '500', transition: 'background 0.2s' }}
+                              >
+                                Give Item
+                              </button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   ))}

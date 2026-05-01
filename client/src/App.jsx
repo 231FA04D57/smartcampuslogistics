@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Storefront from './components/Storefront';
+import ProductPage from './components/ProductPage';
 import SellItem from './components/SellItem';
 import Login from './components/Login';
 import Signup from './components/Signup';
@@ -18,6 +19,7 @@ function App() {
       <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
         <Routes>
           <Route path="/" element={<Storefront />} />
+          <Route path="/product/:id" element={<ProductPage />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/sell" element={<SellItem />} />

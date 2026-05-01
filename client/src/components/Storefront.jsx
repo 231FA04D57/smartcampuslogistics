@@ -268,6 +268,9 @@ const Storefront = () => {
       if (e.key === 'productsUpdated') {
         console.log('Storage change detected for products');
         refreshProducts();
+      } else if (e.key === 'cartUpdated') {
+        const savedCart = localStorage.getItem('cart');
+        if (savedCart) setCart(JSON.parse(savedCart));
       }
     };
 
@@ -551,7 +554,9 @@ const Storefront = () => {
               return (
                 <div key={product.id} className={`product-card ${!productStatus.available ? 'unavailable' : ''}`} style={{ opacity: !productStatus.available ? 0.6 : 1, pointerEvents: !productStatus.available ? 'none' : 'auto' }}>
                   <div className="card-image-wrapper">
-                    <img src={product.image} alt={product.name} className="product-image" />
+                    <Link to={`/product/${product.id}`}>
+                      <img src={product.image} alt={product.name} className="product-image" />
+                    </Link>
                     <div className="category-badge" style={{ background: (product.rentPrice && !product.salePrice && !product.price) ? '#f59e0b' : '', color: (product.rentPrice && !product.salePrice && !product.price) ? '#fff' : '' }}>
                       {(product.rentPrice && !product.salePrice && !product.price) ? `${product.category} (Rent)` : product.category}
                     </div>
@@ -576,7 +581,9 @@ const Storefront = () => {
                         {product.seller === 'Campus Store' ? '🏬' : '🎓'} {product.seller}
                       </div>
                     </div>
-                    <h3 className="product-name">{product.name}</h3>
+                    <Link to={`/product/${product.id}`} style={{ textDecoration: 'none', color: 'inherit' }}>
+                      <h3 className="product-name">{product.name}</h3>
+                    </Link>
                     <p className="product-desc">{product.description}</p>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', color: '#64748b', fontSize: '0.85rem', marginBottom: '1.25rem', fontWeight: '500' }}>
                       <MapPin size={14} color="#4f46e5" />

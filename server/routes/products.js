@@ -57,7 +57,6 @@ router.get('/', async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
-
 // GET /api/products/user - Get current user's products
 router.get('/user', verifyToken, async (req, res) => {
   try {
@@ -70,6 +69,29 @@ router.get('/user', verifyToken, async (req, res) => {
     res.status(500).json({ message: 'Server error' });
   }
 });
+// GET /api/products/:id - Get single product
+router.get('/:id', async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid product ID format' });
+    }
+
+    const product = await Product.findById(req.params.id)
+      .populate('sellerId', 'name email');
+    
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+    
+    res.json(product);
+  } catch (error) {
+    console.error('Error fetching product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+
 
 // POST /api/products - Create a new product
 router.post('/', verifyToken, (req, res, next) => {
@@ -262,6 +284,82 @@ router.post('/:id/buy', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error buying product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/products/:id/deliver - Mark a product as delivered
+router.post('/:id/deliver', verifyToken, async (req, res) => {
+  try {
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    if (product.sellerId.toString() !== req.userId) {
+      return res.status(403).json({ message: 'Not authorized to deliver this product' });
+    }
+
+    if (product.status === 'available') {
+      return res.status(400).json({ message: 'Product is not sold or rented yet' });
+    }
+
+    // Update product status
+    product.isDelivered = true;
+
+    await product.save();
+
+    res.json({
+      message: 'Product marked as delivered',
+      product
+    });
+  } catch (error) {
+    console.error('Error delivering product:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+// POST /api/products/:id/reviews - Add a review
+router.post('/:id/reviews', verifyToken, async (req, res) => {
+  try {
+    const { rating, comment } = req.body;
+
+    if (!rating) {
+      return res.status(400).json({ message: 'Rating is required' });
+    }
+
+    const product = await Product.findById(req.params.id);
+
+    if (!product) {
+      return res.status(404).json({ message: 'Product not found' });
+    }
+
+    const User = require('../models/User');
+    const user = await User.findById(req.userId);
+    
+    const newReview = {
+      userName: user.name,
+      rating: Number(rating),
+      comment,
+      date: new Date()
+    };
+
+    product.reviews.push(newReview);
+    
+    // Update overall rating
+    const totalRating = product.reviews.reduce((sum, review) => sum + review.rating, 0);
+    product.rating = (totalRating / product.reviews.length).toFixed(1);
+
+    await product.save();
+
+    res.json({
+      message: 'Review added successfully',
+      review: newReview,
+      rating: product.rating
+    });
+  } catch (error) {
+    console.error('Error adding review:', error);
     res.status(500).json({ message: 'Server error' });
   }
 });
